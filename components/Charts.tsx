@@ -6,12 +6,14 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
-    Cell, ComposedChart,
+    Cell,
+    ComposedChart,
     Legend,
     Line,
     ResponsiveContainer,
     Tooltip,
-    XAxis, YAxis
+    XAxis,
+    YAxis
 } from "recharts";
 import {
     AcquisitionRecord,
@@ -98,8 +100,8 @@ const EvidenceTooltip = ({ active, payload, label }: any) => {
 };
 
 // --- Acquisitions Map (National Platform High-Fidelity) ---
-export const AcquisitionsMap: React.FC<{ data: AcquisitionRecord[] }> = ({ data }) => {
-    const hq = data.find(x => x.id === 'visu') || { coordinates: { x: 0, y: 0 } };
+export const AcquisitionsMap: React.FC<{ data?: AcquisitionRecord[] }> = ({ data = [] }) => {
+    const hq = (data || []).find(x => x && x.id === 'visu') || { coordinates: { x: 0, y: 0 } };
     
     // Organizational chart data (simplified from provided structure)
     const org = {
@@ -121,22 +123,63 @@ export const AcquisitionsMap: React.FC<{ data: AcquisitionRecord[] }> = ({ data 
         DM_VA: { name: 'Mark Burcham', title: 'Division Manager, Virginia' }
     };
 
+    // ImageCard: simple fill or contain card. When `fit` is 'cover' the image will fill
+    // the card and be cropped to maintain aspect ratio so both columns share the same height.
+    const ImageCard: React.FC<{
+        src: string;
+        alt?: string;
+        containerClass?: string;
+        fit?: 'contain' | 'cover';
+        inset?: boolean;
+    }> = ({ src, alt = '', containerClass = '', fit = 'cover', inset = false }) => {
+        // Use a simple fill layout so both cards keep identical heights (flex layout handles sizing).
+        if (fit === 'cover') {
+            // Cover mode: image fills the card and is cropped to maintain aspect ratio.
+            // This renders the image edge-to-edge so it is flush with the card borders.
+            return (
+                <div className={`flex-1 relative w-full rounded-md overflow-hidden shadow-lg border border-slate-800 bg-slate-900 ${containerClass}`}>
+                    <img src={src} alt={alt} className="absolute inset-0 w-full h-full object-cover object-center block" />
+                </div>
+            );
+        }
+
+        // contain mode keeps the entire image visible but still fills the card area vertically
+        return (
+            <div className={`flex-1 relative w-full rounded-md overflow-hidden shadow-lg border border-slate-800 bg-slate-900 ${containerClass}`}>
+                <div className={`w-full h-full flex items-center justify-center ${inset ? 'p-3' : ''}`}>
+                    <img src={src} alt={alt} className="max-w-full max-h-full object-contain block" />
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div className="h-full w-full relative bg-slate-900/60 rounded-xl border border-blue-900 overflow-hidden shadow-2xl backdrop-blur-md p-4">
-            <div className="w-full flex items-start gap-6 h-full">
-                {/* Left: downsized footprint image with title */}
-                <div className="flex-none w-1/2 h-full p-4 flex items-center justify-center">
-                    <div className="w-full h-full flex flex-col items-center justify-start gap-4">
-                        <h3 className="text-white text-lg font-bold">Visu-Sewer — Expanded Footprint</h3>
-                        <div className="w-full flex-1 flex items-center justify-center">
-                            <img src="/images/geographic-footprint.png" alt="Geographic Footprint" className="w-full h-full object-contain rounded-md shadow-lg" />
-                        </div>
-                    </div>
+        <div className="h-[900px] w-full relative bg-slate-900/60 rounded-xl border border-blue-900 overflow-hidden shadow-2xl backdrop-blur-md p-4 flex flex-col">
+            {/* Header always visible at top */}
+            <div className="pb-2 mb-2 text-center border-b border-blue-900 bg-slate-900/80">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold uppercase tracking-tight text-white drop-shadow-lg">Expanded Footprint</h2>
+                <p className="text-sm text-slate-300 mt-1">Visu-Sewer — Expanded Footprint</p>
+                <div className="h-1 w-36 mx-auto bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 rounded-full mt-3 opacity-90" />
+            </div>
+
+            {/* Only images scroll, header stays fixed */}
+            <div className="flex-1 w-full flex flex-col gap-4 overflow-y-auto max-h-[800px]">
+                <div className="flex-1 w-full flex items-stretch">
+                    <ImageCard
+                        src={`${import.meta.env.BASE_URL}images/orgchart.png`}
+                        alt="Organizational Chart"
+                        fit="contain"
+                        containerClass="bg-slate-800/10"
+                    />
                 </div>
 
-                {/* Right: Organizational chart image (half frame) */}
-                <div className="flex-none w-1/2 h-full p-4 flex items-center justify-center">
-                    <img src="/images/orgchart.png" alt="Organizational Chart" className="w-full h-full object-contain rounded-md shadow-lg" />
+                <div className="flex-1 w-full flex items-stretch">
+                    <ImageCard
+                        src={`${import.meta.env.BASE_URL}images/geographic-footprint.png`}
+                        alt="Geographic Footprint"
+                        fit="contain"
+                        containerClass="bg-slate-800/20"
+                    />
                 </div>
             </div>
         </div>
@@ -160,7 +203,8 @@ export const CctvChart: React.FC<{ data: CctvInspectionRecord[], isSpeaking?: bo
                 layout="vertical" 
                 margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
                 onMouseMove={(state) => {
-                    if (state.activeTooltipIndex !== undefined) setHoverIndex(state.activeTooltipIndex);
+                    const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
+                    if (idx !== null) setHoverIndex(idx);
                 }}
                 onMouseLeave={() => setHoverIndex(null)}
             >
@@ -208,7 +252,8 @@ export const ProjectCostsChart: React.FC<{ data: ProjectCostRecord[], isSpeaking
                 data={data} 
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 onMouseMove={(state) => {
-                    if (state.activeTooltipIndex !== undefined) setHoverIndex(state.activeTooltipIndex);
+                    const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
+                    if (idx !== null) setHoverIndex(idx);
                 }}
                 onMouseLeave={() => setHoverIndex(null)}
             >
@@ -290,7 +335,8 @@ export const ScheduleChart: React.FC<{ data: OperationalVelocityRecord[], isSpea
                 data={chartData} 
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 onMouseMove={(state) => {
-                    if (state.activeTooltipIndex !== undefined) setHoverIndex(state.activeTooltipIndex);
+                    const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
+                    if (idx !== null) setHoverIndex(idx);
                 }}
                 onMouseLeave={() => setHoverIndex(null)}
             >
@@ -403,7 +449,7 @@ export const TechStackVisual: React.FC<{ data: TechMetricRecord[], isSpeaking?: 
 
             {/* Insert field technician image under the three charts, occupying half the box */}
             <div className="mt-4 w-full h-1/2 flex items-center justify-center">
-                <img src="/images/feild-technician-first-guy.png" alt="Field Technician" className="w-full h-full object-cover rounded-md shadow-lg" />
+                <img src={`${import.meta.env.BASE_URL}images/feild-technician-first-guy.png`} alt="Field Technician" className="w-full h-full object-cover rounded-md shadow-lg" />
             </div>
         </div>
     );
@@ -413,14 +459,14 @@ export const TechStackVisual: React.FC<{ data: TechMetricRecord[], isSpeaking?: 
 export const EcosystemVisual: React.FC<{ data: EcosystemRecord[] }> = ({ data }) => {
     // Compute overall statistics for the dataset
     const scores = data.map(d => d.impactScore);
-    const n = scores.length || 1;
-    const mean = Math.round((scores.reduce((a, b) => a + b, 0) / n) * 100) / 100;
-    const sorted = [...scores].sort((a, b) => a - b);
-    const median = sorted.length % 2 === 1 ? sorted[(sorted.length - 1) / 2] : ((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2);
-    const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+    const n = scores.length;
+    const mean = n ? Math.round((scores.reduce((a, b) => a + b, 0) / n) * 100) / 100 : 0;
+    const sorted = n ? [...scores].sort((a, b) => a - b) : [];
+    const median = n ? (sorted.length % 2 === 1 ? sorted[(sorted.length - 1) / 2] : ((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2)) : 0;
+    const variance = n ? scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n : 0;
     const stddev = Math.round(Math.sqrt(variance) * 100) / 100;
-    const min = Math.min(...scores);
-    const max = Math.max(...scores);
+    const min = n ? Math.min(...scores) : 0;
+    const max = n ? Math.max(...scores) : 0;
 
     // Prepare log chart data (log10 transform with +1 to avoid log(0))
     const logData = data.map(d => ({ category: d.category, value: d.impactScore, logValue: Math.log10(d.impactScore + 1) }));
@@ -438,41 +484,50 @@ export const EcosystemVisual: React.FC<{ data: EcosystemRecord[] }> = ({ data })
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {data.map((item, i) => {
-                    const value = Math.max(0, Math.min(100, item.impactScore));
-                    const r = 36; // radius
-                    const c = 2 * Math.PI * r;
-                    const dash = (value / 100) * c;
+            <div className="flex flex-col md:flex-row gap-6 flex-1">
+                <div className="w-full md:w-2/5 flex items-center justify-center bg-slate-950/40 rounded-lg border border-slate-700/60 p-4">
+                    <img
+                        src={`${import.meta.env.BASE_URL}images/visu-sewer-people-matter.png`}
+                        alt="People Matter"
+                        className="w-full h-full max-h-[420px] object-contain rounded-md shadow-lg"
+                    />
+                </div>
 
-                    const colorClass = item.category === 'Safety' ? 'text-red-500' : item.category === 'Robotics' ? 'text-blue-500' : item.category === 'AI' ? 'text-green-400' : 'text-white';
-                    const strokeColor = item.category === 'Safety' ? COLORS.usRed : item.category === 'Robotics' ? COLORS.usBlue : COLORS.success;
+                <div className="w-full md:w-3/5">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                        {data.length > 0 && (
+                            data.map((item, i) => {
+                                const value = Math.max(0, Math.min(100, item.impactScore));
+                                const r = 36; // radius
+                                const c = 2 * Math.PI * r;
+                                const dash = (value / 100) * c;
 
-                    return (
-                        <div key={i} className="bg-slate-900/80 p-4 rounded-lg border border-slate-700 shadow-lg flex flex-col items-center">
-                            <div className={`text-sm uppercase font-bold mb-3 text-center ${colorClass}`}>{item.category}</div>
+                                const colorClass = item.category === 'Safety' ? 'text-red-500' : item.category === 'Robotics' ? 'text-blue-500' : item.category === 'AI' ? 'text-green-400' : 'text-white';
+                                const strokeColor = item.category === 'Safety' ? COLORS.usRed : item.category === 'Robotics' ? COLORS.usBlue : COLORS.success;
 
-                            <div className="relative w-28 h-28 mb-3 flex items-center justify-center">
-                                <svg width="100" height="100" viewBox="0 0 100 100" className="transform rotate-[-90deg]">
-                                    <circle cx="50" cy="50" r={r} stroke="#111827" strokeWidth="8" fill="none" />
-                                    <circle cx="50" cy="50" r={r} stroke={strokeColor} strokeWidth="8" strokeLinecap="round" fill="none"
-                                        strokeDasharray={`${dash} ${c - dash}`} />
-                                </svg>
-                                <div className="absolute text-white font-bold text-lg transform rotate-[90deg]">{value}%</div>
-                            </div>
+                                return (
+                                    <div key={i} className="bg-slate-900/80 p-4 rounded-lg border border-slate-700 shadow-lg flex flex-col items-center">
+                                        <div className={`text-sm uppercase font-bold mb-3 text-center ${colorClass}`}>{item.category}</div>
 
-                            <div className="text-xs text-slate-300 mb-2">Partners</div>
-                            <ul className="text-[12px] text-slate-400 list-disc list-inside w-full">
-                                {item.partners.slice(0,3).map((p, idx) => <li key={idx}>{p}</li>)}
-                            </ul>
-                        </div>
-                    );
-                })}
-            </div>
+                                        <div className="relative w-28 h-28 mb-3 flex items-center justify-center">
+                                            <svg width="100" height="100" viewBox="0 0 100 100" className="transform rotate-[-90deg]">
+                                                <circle cx="50" cy="50" r={r} stroke="#111827" strokeWidth="8" fill="none" />
+                                                <circle cx="50" cy="50" r={r} stroke={strokeColor} strokeWidth="8" strokeLinecap="round" fill="none"
+                                                    strokeDasharray={`${dash} ${c - dash}`} />
+                                            </svg>
+                                            <div className="absolute text-white font-bold text-lg transform rotate-[90deg]">{value}%</div>
+                                        </div>
 
-            {/* Replace Future Projection / Summary Status with the requested image spanning under the four charts */}
-            <div className="mt-6 w-full h-1/2 flex items-center justify-center">
-                <img src="/images/visu-sewer-people-matter.png" alt="People Matter" className="w-full h-full object-cover rounded-lg shadow-lg" />
+                                        <div className="text-xs text-slate-300 mb-2">Partners</div>
+                                        <ul className="text-[12px] text-slate-400 list-disc list-inside w-full">
+                                            {item.partners.slice(0,3).map((p, idx) => <li key={idx}>{p}</li>)}
+                                        </ul>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -487,7 +542,7 @@ export const EvolutionVisual: React.FC = () => {
              {!revealed ? (
                  <div className="absolute inset-0 flex items-center justify-center flex-col gap-6">
                      {/* Full-bleed background image behind the header and button */}
-                     <img src="/images/finished-tunnel.png" alt="Finished Tunnel" className="absolute inset-0 w-full h-full object-cover opacity-70" />
+                     <img src={`${import.meta.env.BASE_URL}images/finished-tunnel.png`} alt="Finished Tunnel" className="absolute inset-0 w-full h-full object-cover opacity-70" />
 
                      {/* Dark overlay to keep text readable */}
                      <div className="absolute inset-0 bg-slate-950/50" />
@@ -616,7 +671,7 @@ export const ClosingVisual: React.FC = () => {
            <div className="relative z-10 mb-8 animate-[bounce_2s_infinite]">
                <div className="w-32 h-32 mx-auto bg-slate-800 rounded-full border-4 border-blue-500 flex items-center justify-center shadow-[0_0_60px_rgba(60,59,110,0.8)] relative overflow-hidden">
                    <div className="absolute inset-0 rounded-full border border-white opacity-20 animate-ping"></div>
-                   <img src="/images/visu-sewer-logo-button.png" alt="Visu Sewer Logo" className="w-full h-full object-cover rounded-full" />
+                   <img src={`${import.meta.env.BASE_URL}images/visu-sewer-logo-button.png`} alt="Visu Sewer Logo" className="w-full h-full object-cover rounded-full" />
                </div>
            </div>
 
@@ -628,7 +683,7 @@ export const ClosingVisual: React.FC = () => {
         {/* Truck image spanning full width under the paragraph */}
         {/* Full-bleed truck image: remove horizontal padding so image spans left->right */}
         <div className="w-full -mx-8 mb-4">
-            <img src="/images/visu-sewer-truck.png" alt="Visu Sewer Truck" className="w-full max-h-[12rem] md:max-h-[20rem] object-contain shadow-lg" />
+            <img src={`${import.meta.env.BASE_URL}images/visu-sewer-truck.png`} alt="Visu Sewer Truck" className="w-full max-h-[12rem] md:max-h-[20rem] object-contain shadow-lg" />
         </div>
          <style>{`
             @keyframes fall {
@@ -650,7 +705,7 @@ export const CovenantVisual: React.FC = () => (
         </div>
 
         <div className="relative h-full w-full flex items-center justify-center">
-            <img src="/images/titlepage.png" alt="Title Page" className="w-full h-full object-contain block" />
+            <img src={`${import.meta.env.BASE_URL}images/titlepage.png`} alt="Title Page" className="w-full h-full object-contain block" />
         </div>
     </div>
 );
@@ -671,7 +726,8 @@ export const TimelineVisual: React.FC<{ data?: HistoricalDataPoint[], isSpeaking
                         data={data} 
                         margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
                         onMouseMove={(state) => {
-                            if (state.activeTooltipIndex !== undefined) setHoverIndex(state.activeTooltipIndex);
+                            const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
+                            if (idx !== null) setHoverIndex(idx);
                         }}
                         onMouseLeave={() => setHoverIndex(null)}
                     >
@@ -720,7 +776,8 @@ export const GrowthBridgeChart: React.FC<{ data: FinancialRecord[], isSpeaking?:
                 data={data} 
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 onMouseMove={(state) => {
-                    if (state.activeTooltipIndex !== undefined) setHoverIndex(state.activeTooltipIndex);
+                    const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
+                    if (idx !== null) setHoverIndex(idx);
                 }}
                 onMouseLeave={() => setHoverIndex(null)}
             >

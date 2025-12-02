@@ -1,6 +1,6 @@
 
 import React from "react";
-import { SlideDefinition, DataSources } from "../types";
+import { DataSources, SlideDefinition } from "../types";
 import { ChartRouter } from "./ChartRouter";
 
 interface SlideViewerProps {
@@ -55,7 +55,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slide, dataSources, is
 
       {/* Right Side: Visualization Stage */}
       <div className="flex-1 w-full h-[350px] lg:h-full min-h-[300px] relative animate-[slideUp_0.5s_ease-out_0.1s_both]">
-         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-950/80 rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden flex flex-col backdrop-blur-sm">
+         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-950/80 rounded-2xl border border-slate-700/50 shadow-2xl overflow-auto flex flex-col backdrop-blur-sm">
             
             {/* Visual Header */}
             <div className="h-8 bg-slate-950/50 border-b border-slate-800 flex items-center px-4 justify-end gap-2 shrink-0">
@@ -64,7 +64,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slide, dataSources, is
             </div>
 
             {/* Chart/Content Container */}
-            <div className="flex-1 relative p-2 lg:p-6 bg-slate-900/30 overflow-hidden">
+            <div className="flex-1 relative p-2 lg:p-6 bg-slate-900/30 overflow-auto">
                 <ChartRouter slide={slide} dataSources={dataSources} isSpeaking={isSpeaking} />
             </div>
 

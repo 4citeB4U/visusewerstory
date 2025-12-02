@@ -174,11 +174,10 @@ export const FlagBackground: React.FC = () => {
   }, []);
 
   return (
-      <canvas 
-        ref={canvasRef} 
-        id="flagCanvas" 
-        className="absolute top-0 left-0 w-full h-full z-0" 
-        style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.4))' }}
+      <canvas
+        ref={canvasRef}
+        id="flagCanvas"
+        className="absolute top-0 left-0 w-full h-full z-0 flag-canvas-shadow pointer-events-none"
       />
   );
 };

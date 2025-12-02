@@ -5,23 +5,18 @@ export type NavItemId = "home" | "discover" | "spaces" | "finance" | "account";
 
 export type SlideId =
   | "innovationBelowGround"
-  | "hiddenNetwork"
+  | "stewardsOfSewers"
   | "throughTheTunnels"
   | "eyeOnUnderground"
   | "savingCities"
-  | "stewardsOfSewers"
-  | "flowingSolutions"
-  | "wiredForFuture"
-  | "belowOurFeet"
-  | "lifelinesInDark"
-  | "pipeProtectors"
-  | "cleanStarts"
   | "mastersOfMain"
-  | "underPressure"
+  | "wiredForFuture"
   | "engineeringTomorrow"
   | "visionariesBelow"
+  | "cleanStarts"
   | "evolutionVelocity"
   | "evidenceLocker"
+  | "appendixCharts1"
   | "closingChapter";
 
 export interface NarrationBlock {
@@ -46,7 +41,8 @@ export type ChartKind =
   | "Evolution"
   | "Evidence"
   | "Dossier"
-  | "Closing";
+  | "Closing"
+  | "AISewersViz";
 
 export interface SlideDefinition {
   id: SlideId;

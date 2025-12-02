@@ -1,21 +1,22 @@
 
 import React from "react";
-import { SlideDefinition, DataSources } from "../types";
-import { 
-  CctvChart, 
-  ProjectCostsChart, 
-  ScheduleChart, 
-  GrowthBridgeChart, 
-  AcquisitionsMap, 
-  CovenantVisual,
-  TimelineVisual,
-  TechStackVisual,
-  EcosystemVisual,
-  DossierVisual,
+import { DataSources, SlideDefinition } from "../types";
+import AISewersDataViz from "./AISewersDataViz";
+import {
+  AcquisitionsMap,
+  CctvChart,
   ClosingVisual,
-  EvolutionVisual,
+  CovenantVisual,
+  DefaultVisual,
+  DossierVisual,
+  EcosystemVisual,
   EvidenceVisual,
-  DefaultVisual 
+  EvolutionVisual,
+  GrowthBridgeChart,
+  ProjectCostsChart,
+  ScheduleChart,
+  TechStackVisual,
+  TimelineVisual
 } from "./Charts";
 
 interface ChartRouterProps {
@@ -25,7 +26,8 @@ interface ChartRouterProps {
 }
 
 export const ChartRouter: React.FC<ChartRouterProps> = ({ slide, dataSources, isSpeaking }) => {
-  switch (slide.chartKind) {
+  // Cast to any to allow custom chart kinds added at runtime
+  switch (slide.chartKind as any) {
     case "CCTV":
       return <CctvChart data={dataSources.cctvInspections} isSpeaking={isSpeaking} />;
     case "ProjectCosts":
@@ -50,6 +52,8 @@ export const ChartRouter: React.FC<ChartRouterProps> = ({ slide, dataSources, is
         return <EvolutionVisual />;
     case "Evidence":
         return <EvidenceVisual data={dataSources.evidenceItems} caseStudies={dataSources.caseStudies} />;
+    case "AISewersViz":
+      return <AISewersDataViz />;
     case "Dossier":
         return <DossierVisual />;
     case "Closing":

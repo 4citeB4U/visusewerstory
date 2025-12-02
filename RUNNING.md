@@ -17,7 +17,7 @@ npm start
 ```
 
 Environment:
-- Copy `.env.local.example` to `.env.local` and set `GEMINI_API_KEY`.
+- No API keys required; everything runs locally in the browser.
 
 Notes:
 - Dev server runs on port 3000 (see `vite.config.ts`).

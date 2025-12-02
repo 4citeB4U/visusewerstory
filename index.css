@@ -1,0 +1,60 @@
+/* Minimal global stylesheet to avoid 404 and provide base styles.
+   Tailwind utilities are provided at runtime via the CDN script in index.html for development.
+   For production, install Tailwind as a PostCSS plugin and compile CSS.
+*/
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0f172a; /* slate-900 */
+  color: #ffffff;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+/* Small helper for print/debugging */
+.visu-hidden { display: none !important; }
+
+/* Percentage width helpers (5% steps) to avoid inline width styles */
+.w-pct-0 { width: 0%; }
+.w-pct-5 { width: 5%; }
+.w-pct-10 { width: 10%; }
+.w-pct-15 { width: 15%; }
+.w-pct-20 { width: 20%; }
+.w-pct-25 { width: 25%; }
+.w-pct-30 { width: 30%; }
+.w-pct-35 { width: 35%; }
+.w-pct-40 { width: 40%; }
+.w-pct-45 { width: 45%; }
+.w-pct-50 { width: 50%; }
+.w-pct-55 { width: 55%; }
+.w-pct-60 { width: 60%; }
+.w-pct-65 { width: 65%; }
+.w-pct-70 { width: 70%; }
+.w-pct-75 { width: 75%; }
+.w-pct-80 { width: 80%; }
+.w-pct-85 { width: 85%; }
+.w-pct-90 { width: 90%; }
+.w-pct-95 { width: 95%; }
+.w-pct-100 { width: 100%; }
+
+/* Canvas flag styling moved from inline styles to a class to avoid inline CSS */
+.flag-canvas-shadow {
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+}
+
+/* Position the floating settings panel using CSS variables updated in React */
+.settings-panel {
+  top: var(--settings-panel-top, 16px);
+  left: var(--settings-panel-left, 16px);
+}
+
+/* Global keyframes used by IntroScreen */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
