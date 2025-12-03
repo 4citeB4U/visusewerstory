@@ -2,17 +2,17 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
-// Vite config for: a-visu-sewer-story
+// Vite config for: visusewerstory
 // - Builds to ./docs for GitHub Pages
-// - Uses /a-visu-sewer-story/ as the base URL (required for GH Pages)
+// - Uses /visusewerstory/ as the base URL (required for GH Pages)
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
     // IMPORTANT: this must match your GitHub repo name exactly
-    // Repo: https://github.com/<your-user>/a-visu-sewer-story
-    base: '/a-visu-sewer-story/',
+    // Repo: https://github.com/4citeB4U/visusewerstory
+    base: '/visusewerstory/',
 
     plugins: [react()],
 
