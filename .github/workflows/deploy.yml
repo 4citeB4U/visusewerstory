@@ -39,7 +39,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'dist'  # This is the default Vite build output directory
+          path: 'docs'  # Matches the output directory in vite.config.ts
 
   deploy:
     environment:
