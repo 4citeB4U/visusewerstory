@@ -1,58 +1,92 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr';
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? '/visusewerstory/' : '/',
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  // Base URL must match the GitHub Pages subpath
+  base: "/visusewerstory/",
+  
+  plugins: [
+    react(),
+    svgr()
+  ] as PluginOption[],
+
+  // Build configuration
   build: {
+    // Output directory for production build
     outDir: 'docs',
-    assetsDir: 'assets',
-    sourcemap: false,
-    chunkSizeWarningLimit: 1000, // Increased chunk size warning limit
+    // Clear output directory before building
+    emptyOutDir: true,
+    // Generate sourcemaps for better debugging
+    sourcemap: true,
+    // Increase chunk size warning limit (for large AI models)
+    chunkSizeWarningLimit: 2000,
+    
+    // Rollup configuration for module bundling
     rollupOptions: {
-      output: {
-        manualChunks: {
-          // Split vendor chunks
-          react: ['react', 'react-dom', 'react-router-dom'],
-          recharts: ['recharts'],
-          // Split onnxruntime into its own chunk
-          onnx: ['onnxruntime-web'],
-          // Split transformers into smaller chunks
-          transformers: ['@xenova/transformers'],
-          // Split other large dependencies
-          vendors: ['@xenova/transformers/dist/xenova-utils', '@xenova/transformers/dist/xenova-transformers']
-        },
-        // Better chunk naming
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]'
-      },
-      // Suppress eval warnings from onnxruntime
-      onwarn(warning, warn) {
-        if (warning.code === 'EVAL' && warning.id && warning.id.includes('onnxruntime-web')) {
+      // Custom warning handler to suppress ONNX eval warnings
+      onwarn(warning, defaultHandler) {
+        // Suppress eval warnings from onnxruntime-web
+        if (
+          warning.code === 'EVAL' &&
+          warning.id &&
+          typeof warning.id === 'string' &&
+          warning.id.includes('onnxruntime-web')
+        ) {
           return;
         }
-        warn(warning);
-      }
-    }
+        defaultHandler(warning);
+      },
+      
+      // Manual code splitting configuration
+      output: {
+        manualChunks: {
+          // Split vendor code into separate chunks
+          'vendor-react': ['react', 'react-dom', 'react-dom/client'],
+          'vendor-transformers': ['@xenova/transformers'],
+          'vendor-onnx': ['onnxruntime-web'],
+          'vendor-charts': ['recharts', 'chart.js', 'react-chartjs-2'],
+          'vendor-ui': ['@heroicons/react', 'classnames', 'tailwind-merge'],
+        },
+      },
+    },
   },
-  server: {
-    host: '0.0.0.0',
-    port: 3000
+
+  // Module resolution
+  resolve: {
+    alias: {
+      // Path alias for src directory
+      '@': '/src',
+    },
   },
-  // Suppress sourcemap warnings for onnxruntime
-  esbuild: {
-    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+
+  // Global variable definitions
+  define: {
+    // Polyfill for Node.js process.env
+    'process.env': {},
+    // Global variable for browser/Node.js compatibility
+    global: 'globalThis',
   },
-  // Optimize dependencies
+
+  // Dependency optimization
   optimizeDeps: {
-    include: ['@xenova/transformers'],
+    // Always include tslib in optimized deps
+    include: ['tslib'],
     esbuildOptions: {
-      // Node.js global to browser globalThis
+      // Global variable for browser/Node.js compatibility
       define: {
-        global: 'globalThis'
-      }
-    }
-  }
-});
+        global: 'globalThis',
+      },
+      // Target modern browsers
+      target: 'es2020',
+    },
+  },
+
+  // Development server configuration
+  server: {
+    // Enable CORS for development
+    cors: true,
+    // Open browser automatically
+    open: mode !== 'production',
+  },
+}));
