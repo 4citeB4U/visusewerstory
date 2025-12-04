@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
-  cancel-in-progress: true
+  group: 'pages-deploy-${{ github.ref }}'
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -34,7 +34,7 @@ jobs:
         run: npm run build
 
       - name: Create .nojekyll
-        run: echo "" > docs/.nojekyll
+        run: touch docs/.nojekyll
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
@@ -50,6 +50,9 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
