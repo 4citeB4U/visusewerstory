@@ -1,4 +1,6 @@
 import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest';
+import { claimEvidence } from './referencesRegistry.js';
+import { WEB_SOURCES } from './webSources.js';
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
 /* ============================================================
@@ -600,7 +602,7 @@ async function loadCsvAndIndex(docId, url, meta) {
 export async function initDocStore() {
   try {
     const base = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL ? import.meta.env.BASE_URL : '/';
-    await Promise.all([
+    const core = [
       loadCsvAndIndex('bid_amounts', `${base}data/bid_amounts.csv`, {
         type: 'csv',
         topic: 'bids',
@@ -621,7 +623,28 @@ export async function initDocStore() {
         topic: 'costs',
         description: 'Yearly budgeted vs actual spend and variance'
       })
-    ]);
+    ];
+
+    // Index any CSV/text files referenced in the references registry (if they live under /public)
+    try {
+      const extraFiles = Array.from(new Set(
+        (Array.isArray(claimEvidence) ? claimEvidence : [])
+          .flatMap(c => Array.isArray(c.filePaths) ? c.filePaths : [])
+          .filter(Boolean)
+      ));
+      for (const rel of extraFiles) {
+        const docId = String(rel).replace(/^\/*/, '').replace(/\//g, '_');
+        core.push(loadCsvAndIndex(docId, `${base}${rel}`.replace(/([^:]?)\/\//g, '$1/'), {
+          type: 'csv',
+          topic: 'reference',
+          description: `Indexed from referencesRegistry: ${rel}`
+        }));
+      }
+    } catch (e) {
+      console.warn('[docStoreBootstrap] skipping referencesRegistry indexing', e);
+    }
+
+    await Promise.all(core);
     console.info('[docStoreBootstrap] Core CSV documents indexed.');
   } catch (err) {
     console.error('[docStoreBootstrap] Unexpected error:', err);
@@ -904,13 +927,39 @@ export async function answerWithEvidence(question, context = '', currentSlide = 
   const chartContext = currentSlide ? getChartContextForSlide(currentSlide.id || currentSlide.title || '') : null;
   const chartData = currentSlide ? getChartDataForSlide(currentSlide.id || currentSlide.title || '') : null;
 
+  // Match claimEvidence entries by slide title (or include all if none)
+  let matchedClaims = [];
+  try {
+    const title = currentSlide?.title ? String(currentSlide.title).toLowerCase() : '';
+    matchedClaims = (Array.isArray(claimEvidence) ? claimEvidence : []).filter(c => {
+      if (!title) return true;
+      const pageTitle = (c.pageTitle || '').toLowerCase();
+      return pageTitle && title.includes(pageTitle);
+    });
+  } catch (e) {
+    /* ignore claim matches */
+  }
+
+  // Suggest relevant web sources (labels only) – do not fetch contents here
+  let suggestedWeb = [];
+  try {
+    const q = String(question || '').toLowerCase();
+    suggestedWeb = (Array.isArray(WEB_SOURCES) ? WEB_SOURCES : [])
+      .map(src => ({ src, score: ((src.label||'') + ' ' + (src.category||'') + ' ' + (src.tags||[]).join(' ')).toLowerCase().includes(q) ? 1 : 0 }))
+      .filter(x => x.score > 0)
+      .slice(0, 5)
+      .map(x => ({ label: x.src.label, url: x.src.url, category: x.src.category }));
+  } catch (e) {
+    /* ignore suggestions */
+  }
+
   return {
     answer: null,
     evidence: {
       localDataPreview: preview,
-      matchedClaims: [],
-      urls: [],
-      webSources: [],
+      matchedClaims,
+      urls: matchedClaims.flatMap(c => Array.isArray(c.sources) ? c.sources : []).slice(0, 10),
+      webSources: suggestedWeb,
       chartContext,
       chartData,
       citations

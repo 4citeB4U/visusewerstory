@@ -2,7 +2,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "../index.css";
-import { docStore, DomAgentProvider } from "../Models/agentlee-local-bundle.js";
+import { docStore, DomAgentProvider, initDocStore } from "../Models/agentlee-local-bundle.js";
 import { sendMessageToAgentLee } from "../services/leewayIndustriesService";
 import App from "./App";
 
@@ -24,8 +24,11 @@ const scheduleBootstrapRag = () => {
   if (typeof window === "undefined") return;
   setTimeout(() => {
     try {
-      if (docStore && typeof docStore.bootstrapRag === "function") {
-        docStore.bootstrapRag();
+      // Prefer the richer init routine which indexes core CSVs and references
+      if (typeof initDocStore === "function") {
+        initDocStore();
+      } else if (docStore && typeof (docStore as any).bootstrapRag === "function") {
+        (docStore as any).bootstrapRag();
       } else if (typeof (window as any).bootstrapRag === "function") {
         (window as any).bootstrapRag();
       }
