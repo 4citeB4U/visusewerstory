@@ -1,7 +1,9 @@
-/* Minimal global stylesheet to avoid 404 and provide base styles.
-   Tailwind utilities are provided at runtime via the CDN script in index.html for development.
-   For production, install Tailwind as a PostCSS plugin and compile CSS.
-*/
+/* Tailwind entrypoints */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Minimal global stylesheet to avoid 404 and provide base styles. */
 
 html, body, #root {
   height: 100%;
