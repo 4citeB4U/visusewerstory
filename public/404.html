@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Redirecting…</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="0; URL=/visusewerstory/" />
+  <script>
+    // SPA fallback: redirect any unknown route to the app base, preserving hash
+    (function() {
+      var base = '/visusewerstory/';
+      var loc = window.location;
+      var url = base + (loc.hash || '');
+      loc.replace(url);
+    })();
+  </script>
+</head>
+<body>
+  Redirecting…
+</body>
+</html>
