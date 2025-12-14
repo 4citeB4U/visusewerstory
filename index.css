@@ -1,4 +1,39 @@
-/* Tailwind entrypoints */
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.THEME.TOKENS.GLOBAL
+REGION: 🔵 UI
+
+STACK: LANG=css; FW=none; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Global Stylesheet and Tailwind Entrypoint",
+  "programmingLanguage": "CSS",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "Tailwind", "Styles", "Theme"],
+  "identifier": "UI.THEME.TOKENS.GLOBAL",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Global stylesheet and Tailwind entrypoint; WHY=Provide base styles and Tailwind configuration; WHO=Agent Lee System; WHERE=/index.css; WHEN=2025-12-09; HOW=Tailwind CSS + custom utility classes
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

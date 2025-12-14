@@ -1,3 +1,39 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.COMPONENT.AGENTLEE.CHAT
+REGION: 🔵 UI
+
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Agent Lee Chat Component",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "UI", "Chat", "AgentLee"],
+  "identifier": "UI.COMPONENT.AGENTLEE.CHAT",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Agent Lee conversational UI component; WHY=Interactive chat interface with voice narration; WHO=Agent Lee System; WHERE=/components/AgentLee.tsx; WHEN=2025-12-09; HOW=React hooks + TTS + chat session management
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 import { MagnifyingGlassPlusIcon, PauseCircleIcon, SpeakerWaveIcon, UserIcon } from '@heroicons/react/24/outline';
 import React, { useEffect, useRef, useState } from "react";
 import { STORY_CONFIG } from '../constants';
@@ -60,10 +96,24 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
   const [isThinking, setIsThinking] = useState(false);
   const [agentStatus, setAgentStatus] = useState(AGENT_STATUS);
   const [showDiag, setShowDiag] = useState(false);
+  const [showSources, setShowSources] = useState(false);
   const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const latestSlideRef = useRef<SlideDefinition | null>(currentSlide);
   useEffect(() => { latestSlideRef.current = currentSlide; }, [currentSlide]);
+
+  // TTS sanitization: strip symbols and URLs for natural speech
+  const safeSpeak = (text: string) => {
+    const t = String(text || '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[#"'`]/g, '')
+      .replace(/[\/\\]{2,}/g, ' ')
+      .replace(/[\.]{3,}/g, ' ')
+      .replace(/[<>\[\]\(\)]+/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    try { (ttsService as any).speakQueued?.(t); } catch {}
+  };
 
   let assistantText = "(No answer returned)"; // Declare assistantText earlier
   useEffect(() => {
@@ -90,11 +140,320 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
     scrollToBottom();
   }, [messages, isThinking]);
 
+  // Expose minimal UI control bridge for navigation, clicking, and scrolling
+  useEffect(() => {
+    (window as any).AGENTLEE_UI = (window as any).AGENTLEE_UI || {};
+    const ui = (window as any).AGENTLEE_UI;
+    ui.scrollDown = (amount: number = 400) => {
+      try { window.scrollBy({ top: amount, behavior: 'smooth' }); } catch {}
+    };
+    ui.scrollUp = (amount: number = 400) => {
+      try { window.scrollBy({ top: -amount, behavior: 'smooth' }); } catch {}
+    };
+    ui.clickROI = () => {
+      try {
+        const buttons = Array.from(document.querySelectorAll('button, a')) as HTMLElement[];
+        const roiBtn = buttons.find(b => /roi/i.test((b.innerText || '').trim()));
+        roiBtn?.click();
+      } catch {}
+    };
+    ui.clickChartByText = (label: string) => {
+      try {
+        const buttons = Array.from(document.querySelectorAll('button, a')) as HTMLElement[];
+        const target = buttons.find(b => new RegExp(label, 'i').test((b.innerText || '').trim()));
+        target?.click();
+      } catch {}
+    };
+
+    // Slide-aware attribute tagging for right-hand container and tabs
+    ui.tagSlideDOM = (pageNumber?: number) => {
+      try {
+        const page = String(pageNumber ?? (latestSlideRef.current as any)?.pageNumber ?? '');
+        // Tag right-hand container heuristically by overflow-y and screen position
+        const candidates = Array.from(document.querySelectorAll<HTMLElement>('*'));
+        const rightPanels = candidates.filter(p => {
+          const s = getComputedStyle(p);
+          const hasY = (p.scrollHeight > p.clientHeight) && /(auto|scroll)/.test(s.overflowY);
+          const rect = p.getBoundingClientRect();
+          return hasY && rect.left > (window.innerWidth / 2);
+        });
+        const target = rightPanels.sort((a,b) => b.scrollHeight - a.scrollHeight)[0] || rightPanels[0];
+        if (target) {
+          target.setAttribute('data-slide', page);
+          target.setAttribute('data-role', 'right-panel');
+          target.id = target.id || `slide-${page}-right-panel`;
+        }
+        // Tag tab buttons by known labels
+        const tabs = ['Cost Analysis','Performance Metrics','Work Impact','ROI and Savings','Technology Comparison'];
+        const els = Array.from(document.querySelectorAll<HTMLElement>('button, [role="tab"], a'));
+        for (const label of tabs) {
+          const t = els.find(e => new RegExp(label, 'i').test((e.innerText || '').trim()));
+          if (t) {
+            t.setAttribute('data-slide', page);
+            t.setAttribute('data-role', 'tab');
+            t.setAttribute('data-tab', label.replace(/\s+/g,'-').toLowerCase());
+            if (!t.id) t.id = `slide-${page}-tab-${label.replace(/\s+/g,'-').toLowerCase()}`;
+          }
+        }
+        return true;
+      } catch { return false; }
+    };
+
+    // Tag chart containers and points with data-* attributes when available
+    ui.tagChartDOM = (pageNumber?: number) => {
+      try {
+        const page = String(pageNumber ?? (latestSlideRef.current as any)?.pageNumber ?? '');
+        const charts = Array.from(document.querySelectorAll<HTMLElement>('.recharts-wrapper, canvas, svg'));
+        charts.forEach((c, i) => {
+          c.setAttribute('data-slide', page);
+          c.setAttribute('data-role', 'chart');
+          c.setAttribute('data-chart-index', String(i));
+          if (!c.id) c.id = `slide-${page}-chart-${i}`;
+        });
+        return charts.length > 0;
+      } catch { return false; }
+    };
+
+    // Helper: discover scrollable containers (overflow-x/y with scroll ranges)
+
+    ui.findScrollableContainers = () => {
+      const candidates = Array.from(document.querySelectorAll<HTMLElement>('*'));
+      const scrollables = candidates.filter((el: HTMLElement) => {
+        const style = getComputedStyle(el);
+        const hasY = (el.scrollHeight > el.clientHeight) && /(auto|scroll)/.test(style.overflowY);
+        const hasX = (el.scrollWidth > el.clientWidth) && /(auto|scroll)/.test(style.overflowX);
+        return hasY || hasX;
+      });
+      return scrollables;
+    };
+
+    // Shared helpers hoisted for reuse across routines
+    ui.clickByLabel = (label: string) => {
+      const els = Array.from(document.querySelectorAll<HTMLElement>('button, [role="tab"], a'));
+      const t = els.find(e => new RegExp(label, 'i').test((e.innerText || '').trim()));
+      t?.click();
+      return !!t;
+    };
+    ui.waitActive = async (label: string, timeoutMs = 1500) => {
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        const els = Array.from(document.querySelectorAll<HTMLElement>('button, [role="tab"], a'));
+        const t = els.find(e => new RegExp(label, 'i').test((e.innerText || '').trim()));
+        if (t) {
+          const active = t.classList.contains('active') || t.getAttribute('aria-selected') === 'true';
+          if (active) return true;
+        }
+        await new Promise(res => setTimeout(res, 120));
+      }
+      return false;
+    };
+    ui.ensureChartsRendered = async (timeoutMs = 1200) => {
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        const hasCharts = !!document.querySelector('.recharts-wrapper, canvas, svg');
+        if (hasCharts) return true;
+        await new Promise(res => setTimeout(res, 120));
+      }
+      return false;
+    };
+
+    // Scroll the active chart panel (vertical then horizontal) while explaining
+    ui.scrollActiveChartPanel = async () => {
+      try {
+        const scrolls = ui.findScrollableContainers();
+        const v = scrolls.filter((el: HTMLElement) => {
+          const s = getComputedStyle(el);
+          return /(auto|scroll)/.test(s.overflowY) && (el.scrollHeight > el.clientHeight);
+        }).sort((a: HTMLElement, b: HTMLElement) => (b.scrollHeight - b.clientHeight) - (a.scrollHeight - a.clientHeight))[0];
+        if (v) {
+          const maxTop = v.scrollHeight - v.clientHeight;
+          v.scrollTo({ top: maxTop, behavior: 'smooth' });
+          await new Promise(res => setTimeout(res, 700));
+          v.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        const h = scrolls.filter((el: HTMLElement) => {
+          const s = getComputedStyle(el);
+          return /(auto|scroll)/.test(s.overflowX) && (el.scrollWidth > el.clientWidth);
+        }).sort((a: HTMLElement, b: HTMLElement) => (b.scrollWidth - b.clientWidth) - (a.scrollWidth - a.clientWidth))[0];
+        if (h) {
+          const maxLeft = h.scrollWidth - h.clientWidth;
+          h.scrollTo({ left: maxLeft, behavior: 'smooth' });
+          await new Promise(res => setTimeout(res, 700));
+          h.scrollTo({ left: 0, behavior: 'smooth' });
+        }
+        return true;
+      } catch { return false; }
+    };
+
+    // Inline actions for ROI and Slide 11 automation
+    ui.clickROI = () => ui.clickByLabel('ROI and Savings');
+    ui.runSlide11TabsAutomation = async () => {
+      const TAB_LABELS = [
+        'Cost Analysis',
+        'Performance Metrics',
+        'Work Impact',
+        'ROI and Savings',
+        'Technology Comparison'
+      ];
+      const scrollActivePanel = async () => {
+        const scrolls = ui.findScrollableContainers();
+        const v = scrolls.filter((el: HTMLElement) => {
+          const s = getComputedStyle(el);
+          return /(auto|scroll)/.test(s.overflowY) && (el.scrollHeight > el.clientHeight);
+        }).sort((a: HTMLElement, b: HTMLElement) => (b.scrollHeight - b.clientHeight) - (a.scrollHeight - a.clientHeight))[0];
+        if (v) {
+          const maxTop = v.scrollHeight - v.clientHeight;
+          v.scrollTo({ top: maxTop, behavior: 'smooth' });
+          await new Promise(res => setTimeout(res, 600));
+        }
+        const h = scrolls.filter((el: HTMLElement) => {
+          const s = getComputedStyle(el);
+          return /(auto|scroll)/.test(s.overflowX) && (el.scrollWidth > el.clientWidth);
+        }).sort((a: HTMLElement, b: HTMLElement) => (b.scrollWidth - b.clientWidth) - (a.scrollWidth - a.clientWidth))[0];
+        if (h) {
+          const maxLeft = h.scrollWidth - h.clientWidth;
+          h.scrollTo({ left: maxLeft, behavior: 'smooth' });
+          await new Promise(res => setTimeout(res, 600));
+        }
+      };
+      for (const label of TAB_LABELS) {
+        ui.clickByLabel(label);
+        await ui.waitActive(label);
+        await ui.ensureChartsRendered();
+        await scrollActivePanel();
+      }
+      return true;
+    };
+
+    // Slide Interaction Map: Slide 2 — right-hand vertical scroll completion
+    ui.runSlide2ScrollRoutine = async () => {
+      try {
+        const panels = ui.findScrollableContainers();
+        // Heuristic: right-hand panel likely widest/positioned to the right; choose with overflow-y
+        const rightPanels = panels.filter((p: HTMLElement) => {
+          const s = getComputedStyle(p);
+          return /(auto|scroll)/.test(s.overflowY);
+        });
+        // pick the one with max scrollHeight
+        const target = rightPanels.sort((a: HTMLElement, b: HTMLElement) => b.scrollHeight - a.scrollHeight)[0] || rightPanels[0];
+        if (!target) return false;
+        // Scroll to bottom deterministically
+        const maxTop = target.scrollHeight - target.clientHeight;
+        target.scrollTo({ top: maxTop, behavior: 'smooth' });
+        // Wait for completion
+        await new Promise(res => setTimeout(res, 700));
+        const done = Math.abs(target.scrollTop - maxTop) < 2;
+        return done;
+      } catch { return false; }
+    };
+
+    // Slide Interaction Map: Slide 11 — tab enumeration and multi-axis scrolling
+    ui.runSlide11TabsAutomation = async () => {
+      const TAB_LABELS = [
+        'Cost Analysis',
+        'Performance Metrics',
+        'Work Impact',
+        'ROI and Savings',
+        'Technology Comparison'
+      ];
+      const scrollActivePanel = async () => {
+        // choose largest scrollable region (vertical first)
+        const scrolls = ui.findScrollableContainers();
+        const v = scrolls.filter((el: HTMLElement) => {
+          const s = getComputedStyle(el);
+          return /(auto|scroll)/.test(s.overflowY) && (el.scrollHeight > el.clientHeight);
+        }).sort((a: HTMLElement, b: HTMLElement) => (b.scrollHeight - b.clientHeight) - (a.scrollHeight - a.clientHeight))[0];
+        if (v) {
+          const maxTop = v.scrollHeight - v.clientHeight;
+          v.scrollTo({ top: maxTop, behavior: 'smooth' });
+          await new Promise(res => setTimeout(res, 600));
+        }
+        const h = scrolls.filter((el: HTMLElement) => {
+          const s = getComputedStyle(el);
+          return /(auto|scroll)/.test(s.overflowX) && (el.scrollWidth > el.clientWidth);
+        }).sort((a: HTMLElement, b: HTMLElement) => (b.scrollWidth - b.clientWidth) - (a.scrollWidth - a.clientWidth))[0];
+        if (h) {
+          const maxLeft = h.scrollWidth - h.clientWidth;
+          h.scrollTo({ left: maxLeft, behavior: 'smooth' });
+          await new Promise(res => setTimeout(res, 600));
+        }
+      };
+      for (const label of TAB_LABELS) {
+        ui.clickByLabel(label);
+        await ui.waitActive(label);
+        await ui.ensureChartsRendered();
+        await scrollActivePanel();
+      }
+      return true;
+    };
+
+    // Enumerate chart series on page 11 across all tabs and return a summary
+    ui.enumeratePage11Charts = async () => {
+      const TAB_LABELS = [
+        'Cost Analysis',
+        'Performance Metrics',
+        'Work Impact',
+        'ROI and Savings',
+        'Technology Comparison'
+      ];
+      const seriesForTab = async (label: string) => {
+        // Navigate to tab and wait active
+        const clicked = ui.clickByLabel(label);
+        await ui.waitActive(label);
+        await ui.ensureChartsRendered();
+        // Inspect Recharts legend or labels
+        const legends = Array.from(document.querySelectorAll('.recharts-legend-item')) as HTMLElement[];
+        const legendText = legends.map(l => (l.innerText || '').trim()).filter(Boolean);
+        // Fallback: inspect aria-labels or title attributes within svg
+        const svgs = Array.from(document.querySelectorAll('svg')) as SVGElement[];
+        const svgTitles = svgs.flatMap(s => Array.from(s.querySelectorAll('title')).map(t => (t.textContent || '').trim())).filter(Boolean);
+        // Fallback: any axis ticks
+        const ticks = Array.from(document.querySelectorAll('.recharts-cartesian-axis-tick')) as HTMLElement[];
+        const tickText = ticks.map(t => (t.innerText || '').trim()).filter(Boolean).slice(0, 12);
+        return {
+          tab: label,
+          legends: legendText,
+          titles: svgTitles,
+          sampleTicks: tickText,
+          chartCount: (document.querySelectorAll('.recharts-wrapper, canvas').length) || 0,
+        };
+      };
+      const out = [] as any[];
+      for (const label of TAB_LABELS) {
+        out.push(await seriesForTab(label));
+      }
+      (window as any).AGENT_LAST_PAGE11_SERIES = out;
+      return out;
+    };
+
+    // Highlight a data point via emitting a selection event (Charts listen to this global)
+    ui.highlightChartPoint = (opts: { series?: string; x?: string | number; y?: number; index?: number }) => {
+      try {
+        (window as any).AGENT_SELECTED_POINT = opts;
+        // Attempt a visual hint: flash the first chart container
+        const c = document.querySelector('.recharts-wrapper') as HTMLElement | null;
+        if (c) { c.style.outline = '2px solid #22c55e'; setTimeout(() => { c.style.outline = ''; }, 800); }
+      } catch {}
+    };
+
+    // Programmatic selection by series and label (legend/tick match)
+    ui.pickPointByLabel = (seriesName: string, label: string) => {
+      try {
+        (window as any).AGENT_SELECTED_POINT = { series: seriesName, x: label };
+        const containers = Array.from(document.querySelectorAll('.recharts-wrapper')) as HTMLElement[];
+        if (containers[0]) { containers[0].style.outline = '2px solid #22c55e'; setTimeout(() => { containers[0].style.outline = ''; }, 800); }
+        return true;
+      } catch { return false; }
+    };
+  }, []);
+
   // When Agent Lee box opens, create contextual greeting and speak it
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const slideTitle = currentSlide.title;
-      const greetingText = `Hello. I am Agent Lee. I am here to help you understand "${slideTitle}". How can I assist you with this data?`;
+      const hour = new Date().getHours();
+      const dayPart = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+      const greetingText = `${dayPart}. I’m Agent Lee. Let’s walk this page together — "${slideTitle}". We can stay here or move when you’re ready.`;
 
       const greetingMessage: Message = {
         id: Date.now(),
@@ -108,7 +467,7 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
 
       // Speak greeting immediately (non-streaming) with a tiny delay to avoid cancel race
       setTimeout(() => {
-        try { (ttsService as any).speakQueued?.(greetingText); } catch (e) { /* noop */ }
+        try { safeSpeak(greetingText); } catch (e) { /* noop */ }
       }, 120);
     }
   }, [isOpen, currentSlide, messages.length, playDuringTyping]);
@@ -154,6 +513,25 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
       if (navigationTarget) {
         console.log('Navigation command in response:', navigationTarget);
         onNavigate(navigationTarget);
+        // After navigation, auto-run slide-specific automation
+        setTimeout(() => {
+          try {
+            if (String(navigationTarget) === '2') {
+              (window as any).AGENTLEE_UI?.runSlide2ScrollRoutine?.();
+            }
+            if (String(navigationTarget) === '11') {
+              (window as any).AGENTLEE_UI?.runSlide11TabsAutomation?.();
+            }
+            if (/^roi$/i.test(String(navigationTarget)) || String(navigationTarget) === '11') {
+              (window as any).AGENTLEE_UI?.clickROI?.();
+            }
+            // Tag DOM for deterministic targeting and load page KB
+            const pn = Number(navigationTarget);
+            // Tagging: set a data attribute on body to assist targeting
+            try { document.body.dataset.agentSlide = String(pn); } catch {}
+            (window as any).AGENTLEE_KB?.loadPageKnowledge?.(pn);
+          } catch {}
+        }, 600);
         return; // Exit early to avoid sending message
       }
 
@@ -181,7 +559,28 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
       const agentMsg: Message = { id: Date.now() + 1, sender: "agent", text: assistantText, isStreaming: false };
       setMessages(prev => [...prev, agentMsg]);
       // Always speak the answer immediately (non-streaming)
-      try { (ttsService as any).speakQueued?.(assistantText); } catch (e) { /* noop */ }
+      try { safeSpeak(assistantText); } catch (e) { /* noop */ }
+
+      // Gentle auto-scroll on media-heavy pages (e.g., map/picture slides)
+      try {
+        const kind = String((latestSlideRef.current || currentSlide)?.chartKind || '').toLowerCase();
+        if (/(map|image|picture|gallery)/.test(kind)) {
+          setTimeout(() => { (window as any).AGENTLEE_UI?.scrollDown?.(300); }, 1000);
+          setTimeout(() => { (window as any).AGENTLEE_UI?.scrollUp?.(300); }, 3000);
+        }
+      } catch {}
+
+      // If the user asked about ROI charts on page 11, run tab automation and explain charts
+      try {
+        const qLower = String(query || '').toLowerCase();
+        const isROIAsk = qLower.includes('roi') || qLower.includes('return on investment');
+        const slideNum = ((latestSlideRef.current || currentSlide) as any)?.pageNumber ?? null;
+        if (isROIAsk) {
+          // Attempt to open ROI and run tabs automation
+          setTimeout(() => { (window as any).AGENTLEE_UI?.clickROI?.(); }, 400);
+          setTimeout(() => { (window as any).AGENTLEE_UI?.runSlide11TabsAutomation?.(); }, 900);
+        }
+      } catch {}
     };
 
     if (didNav) {
@@ -211,8 +610,8 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
         // Play TTS after streaming unless we already spoke during typing
         if (!playDuringTyping) {
           try {
-            setTimeout(() => {
-              (ttsService as any).speakQueued?.(m.text);
+            setTimeout(async () => {
+              await ttsService.speakQueuedAsync(m.text);
             }, 200);
           } catch (e) { console.error('TTS speak failed', e); }
         }
@@ -267,7 +666,11 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
             <span className="text-[9px] text-green-400 uppercase tracking-widest font-mono">Intelligence Unit</span>
           </div>
         </div>
-          <button onClick={() => setIsOpen(false)} className="text-green-400 hover:text-white transition-colors text-xl font-bold" title="Close Agent Lee"><PauseCircleIcon className="w-5 h-5" /></button>
+          <div className="flex items-center gap-2">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowSources(s => !s); }} className="text-green-400 hover:text-white transition-colors text-xs border border-green-700 px-2 py-1 rounded" title="Show Sources">Sources</button>
+            {/* Explain Chart button removed; chart explanation handled via natural chat intents */}
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(false); }} className="text-green-400 hover:text-white transition-colors text-xl font-bold" title="Close Agent Lee"><PauseCircleIcon className="w-5 h-5" /></button>
+          </div>
       </div>
       {/* Scrollable Messages Area - Fixed Height Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/40 custom-scrollbar relative">
@@ -293,6 +696,63 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Sources / Citations Panel */}
+      {showSources && (
+        <div className="max-h-40 overflow-y-auto border-t border-green-900/40 bg-black/50 p-3 text-xs text-green-200">
+          {(() => {
+            const ev: any = (window as any).AGENT_LAST_EVIDENCE || {};
+            const citations = Array.isArray(ev?.citations) ? ev.citations : [];
+            const claims = Array.isArray(ev?.matchedClaims) ? ev.matchedClaims : [];
+            const web = Array.isArray(ev?.webSources) ? ev.webSources : [];
+            return (
+              <div className="space-y-2">
+                {citations.length > 0 && (
+                  <div>
+                    <div className="font-semibold text-green-300 mb-1">Citations</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {citations.slice(0,8).map((c: any, i: number) => (
+                        <li key={i} className="break-words">
+                          <span className="text-green-400">[{c.id ?? i+1}]</span> {c.docId || 'doc'}{typeof c.score === 'number' ? ` (score ${c.score.toFixed?.(3) ?? c.score})` : ''}
+                          {c.textSnippet ? `: ${String(c.textSnippet).slice(0, 160)}…` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {claims.length > 0 && (
+                  <div>
+                    <div className="font-semibold text-green-300 mb-1">Matched Claims</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {claims.slice(0,6).map((cl: any, i: number) => (
+                        <li key={i} className="break-words">
+                          <span className="text-green-400">p{cl.pageNumber ?? '?'}:</span> {cl.claim}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {web.length > 0 && (
+                  <div>
+                    <div className="font-semibold text-green-300 mb-1">Web Sources</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {web.slice(0,5).map((w: any, i: number) => (
+                        <li key={i} className="break-words">
+                          <a className="underline hover:text-white" href={w.url} target="_blank" rel="noreferrer">{w.label || w.url}</a>
+                          {w.category ? ` — ${w.category}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(!citations.length && !claims.length && !web.length) && (
+                  <div className="text-slate-400">No sources linked yet. Ask a question about a specific slide or chart.</div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Fixed Input Area */}
       <div className="p-3 bg-slate-950 border-t border-green-900/50 shrink-0">
         <div className="flex gap-2">
@@ -301,11 +761,11 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask strategic questions..."
+            placeholder="Talk to Agent Lee about this page..."
             className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/50 placeholder-slate-500 transition-all"
             />
             <button 
-            onClick={handleSend}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSend(); }}
             disabled={!input.trim() || isThinking}
             className="px-4 py-2 bg-green-800 hover:bg-green-700 text-white rounded text-sm font-bold transition-colors disabled:opacity-50 shadow-lg"
             title="Send question to Agent Lee"
@@ -325,6 +785,57 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
           </div>
         </div>
       )}
+
+      {/* Add button IDs and chart-specific responses for page 11 */}
+      <div className="p-3 bg-slate-900 border-t border-green-900/50 shrink-0">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs text-green-500 uppercase font-mono">Page 11 Quick Actions</span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              id="CA11"
+              onClick={() => handlePage11ButtonClick(`Cost Reduction Comparison\nAfter AI\nBefore AI\n...`)}
+              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
+            >
+              Cost Analysis
+            </button>
+            <button
+              id="PM11"
+              onClick={() => handlePage11ButtonClick(`Processing Speed Comparison\n0\n3\n6\n...`)}
+              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
+            >
+              Performance Metrics
+            </button>
+            <button
+              id="WI11"
+              onClick={() => handlePage11ButtonClick(`Workforce Transformation Metrics\nSkill Obsolescence\n...`)}
+              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
+            >
+              Workforce Impact
+            </button>
+            <button
+              id="RS11"
+              onClick={() => handlePage11ButtonClick(`ROI Timeline Across Case Studies\nPayback Period\n...`)}
+              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
+            >
+              ROI and Savings
+            </button>
+            <button
+              id="TC11"
+              onClick={() => handlePage11ButtonClick(`Technology Platform Comparison\nGraniteNet\nPipeSleuth\n...`)}
+              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
+            >
+              Technology Comparison
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
+  
+  // Define the handlePage11ButtonClick function within the AgentLee component
+  function handlePage11ButtonClick(response: string) {
+    console.log(`[AgentLee] Button clicked: ${response}`);
+    // Trigger Agent Lee to speak the response
+    ttsService.speakQueuedAsync(response);
+  }
 };

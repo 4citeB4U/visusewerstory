@@ -1,3 +1,39 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.COMPONENT.DATAVIZ.SEWERS
+REGION: 🔵 UI
+
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "AI Sewer Infrastructure Data Visualization",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "UI", "DataVisualization", "Infrastructure"],
+  "identifier": "UI.COMPONENT.DATAVIZ.SEWERS",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=AI sewer infrastructure data visualization; WHY=Display cost savings and performance metrics; WHO=Agent Lee System; WHERE=/components/AISewersDataViz.tsx; WHEN=2025-12-09; HOW=Recharts library + tabbed interface + multiple chart types
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 

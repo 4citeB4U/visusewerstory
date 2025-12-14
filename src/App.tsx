@@ -1,11 +1,46 @@
-import { Cog6ToothIcon, PauseCircleIcon, PlayCircleIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/outline';
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: CORE.APP.SHELL.LAYOUT
+REGION: 🟢 CORE
+
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+	MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+	ROLE=support;
+	INTENT_SCOPE=n/a;
+	LOCATION_DEP=none;
+	VERTICALS=n/a;
+	RENDER_SURFACE=in-app;
+	SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+	"@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+	"@type": "SoftwareSourceCode",
+	"name": "Main Application Shell",
+	"programmingLanguage": "TypeScript",
+	"runtimePlatform": "browser",
+	"about": ["LEEWAY", "React", "Application", "Shell"],
+	"identifier": "CORE.APP.SHELL.LAYOUT",
+	"license": "MIT",
+	"dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Main application shell, presentation mode, Agent Lee event handlers; WHY=Orchestrate UI components and presentation flow; WHO=Leeway Industries; WHERE=/src/App.tsx; WHEN=2025-12-09; HOW=React + state management + event handling
+SPDX-License-Identifier: MIT
+============================================================================ */
+import { Cog6ToothIcon, PauseCircleIcon, PlayCircleIcon } from '@heroicons/react/24/outline';
 import React from 'react';
 import { AgentLee } from '../components/AgentLee';
 import { FlagBackground } from '../components/FlagBackground';
 import { IntroScreen } from '../components/IntroScreen';
 import { SlideViewer } from '../components/SlideViewer';
 import { MOCK_DATA, STORY_CONFIG } from '../constants';
-import { AGENT_STATUS, sendMessageToAgentLee } from '../services/leewayIndustriesService';
+import { sendMessageToAgentLee } from '../services/leewayIndustriesService';
 import { ttsService } from '../services/ttsService';
 import { mapVoicesToPreferred, pickPreferredVoiceName, VoiceOption } from '../services/voicePreferences';
 import { PresentationMode, SlideDefinition } from '../types';
@@ -15,6 +50,8 @@ export default function App() {
 	const [presentationMode, setPresentationMode] = React.useState<PresentationMode>('Auto');
 	const [activeIndex, setActiveIndex] = React.useState(0);
 	const [isPaused, setIsPaused] = React.useState(false);
+	const [isSpeakingPaused, setIsSpeakingPaused] = React.useState(false);
+	const narrationProgressRef = React.useRef<{ slideIndex: number; paragraphIndex: number } | null>(null);
 	const [isMuted, setIsMuted] = React.useState(false);
 	const [showSettings, setShowSettings] = React.useState(false);
 	const [agentLeeOpen, setAgentLeeOpen] = React.useState(false);
@@ -28,33 +65,78 @@ export default function App() {
 		}
 	});
 	const [availableVoices, setAvailableVoices] = React.useState<VoiceOption[]>([]);
-	const [selectedVoice, setSelectedVoice] = React.useState<string>(localStorage.getItem('agentlee_tts_voice') || '');
-	const [voiceRate, setVoiceRate] = React.useState<number>(ttsService.getRate());
-	const [voicePitch, setVoicePitch] = React.useState<number>(ttsService.getPitch());
-	const [settingsPanelPos, setSettingsPanelPos] = React.useState<{ top: number; left: number }>({ top: 120, left: 120 });
+	const [selectedVoice, setSelectedVoice] = React.useState(localStorage.getItem('agentlee_tts_voice') || '');
+	const [voiceRate, setVoiceRate] = React.useState(ttsService.getRate());
+	const [voicePitch, setVoicePitch] = React.useState(ttsService.getPitch());
+	const [settingsPanelPos, setSettingsPanelPos] = React.useState({ top: 120, left: 120 });
 
 	const autoRunRef = React.useRef<{ running: boolean }>({ running: false });
 	const settingsButtonRef = React.useRef<HTMLButtonElement | null>(null);
 	const settingsPanelRef = React.useRef<HTMLDivElement | null>(null);
+	const manualNavigationRef = React.useRef(false);
 
 	const slides = STORY_CONFIG.slides || [];
 	const currentSlide = slides[activeIndex] || slides[0] || { title: 'Welcome', id: 'welcome' };
 
 	const handleStart = (mode: PresentationMode) => {
+		console.log('[App] handleStart called with mode:', mode, 'activeIndex:', activeIndex);
 		setPresentationMode(mode);
 		setHasStarted(true);
 	};
 
+	// Ensure slide-specific scroll calibration is complete
+	const slideScrollBehaviors: { [key: number]: () => void } = {
+		11: () => {
+			// Page 11: Multi-chart handling
+			try {
+				(window as any).AGENTLEE_UI?.runSlide11TabsAutomation?.();
+				(window as any).AGENTLEE_UI?.ensureChartsRendered?.();
+			} catch {}
+		},
+		12: () => {
+			// Page 12: Example scroll behavior
+			try {
+				(window as any).AGENTLEE_UI?.scrollActiveChartPanel?.();
+			} catch {}
+		},
+		13: () => {
+			// Page 13: Custom behavior for specific charts
+			try {
+				console.log('Custom scroll behavior for Page 13');
+			} catch {}
+		},
+	};
+
 	const navigateTo = (target: string) => {
+		console.log('[App] navigateTo called with target:', target);
+		manualNavigationRef.current = true; // Mark navigation as manual
 		if (!target) return;
 		const pageNum = parseInt(target, 10);
 		if (!isNaN(pageNum)) {
 			const idx = Math.max(0, Math.min(slides.length - 1, pageNum - 1));
+			console.log('[App] Navigating to page number', pageNum, '-> index', idx);
+			// Deterministic page navigation by number; also cancel any pending speech
+			ttsService.cancel();
+			ttsService.clearQueue();
 			setActiveIndex(idx);
+			try {
+				(document.body as any).dataset.agentSlide = String(pageNum);
+				(window as any).AGENTLEE_KB?.loadPageKnowledge?.(pageNum);
+				slideScrollBehaviors[pageNum as keyof typeof slideScrollBehaviors]?.(); // Trigger slide-specific scroll behavior
+			} catch {}
 			return;
 		}
 		const idx = slides.findIndex((slide) => slide.id === target || slide.id?.toLowerCase() === target.toLowerCase());
-		if (idx >= 0) setActiveIndex(idx);
+		console.log('[App] Navigating to slide id', target, '-> index', idx);
+		if (idx >= 0) {
+			setActiveIndex(idx);
+			try {
+				const pn = (slides[idx] as any)?.pageNumber ?? (idx + 1);
+				(document.body as any).dataset.agentSlide = String(pn);
+				(window as any).AGENTLEE_KB?.loadPageKnowledge?.(pn);
+				slideScrollBehaviors[pn as keyof typeof slideScrollBehaviors]?.(); // Trigger slide-specific scroll behavior
+			} catch {}
+		}
 	};
 
 	const goToEvidence = () => {
@@ -67,6 +149,11 @@ export default function App() {
 		return slide.narration.paragraphs.join(' ').replace(/\s+/g, ' ').trim();
 	}, []);
 
+	const narrationParagraphsForSlide = React.useCallback((slide?: SlideDefinition | null) => {
+		if (!slide || !Array.isArray(slide.narration?.paragraphs)) return [] as string[];
+		return slide.narration.paragraphs.map(p => String(p).replace(/\s+/g, ' ').trim()).filter(p => p.length > 0);
+	}, []);
+
 	const toggleMute = () => {
 		const next = !isMuted;
 		setIsMuted(next);
@@ -74,12 +161,27 @@ export default function App() {
 	};
 
 	const togglePause = () => {
-		const next = !isPaused;
-		setIsPaused(next);
+		const next = !isSpeakingPaused;
+		setIsSpeakingPaused(next);
 		if (next) {
 			ttsService.pause();
 		} else {
-			ttsService.resume();
+			// Resume: ensure we are on the same slide and restart current paragraph from beginning
+			const prog = narrationProgressRef.current;
+			if (prog) {
+				if (activeIndex !== prog.slideIndex) {
+					setActiveIndex(prog.slideIndex);
+				}
+				const slide = slides[prog.slideIndex];
+				const paras = narrationParagraphsForSlide(slide);
+				const currentPara = paras[prog.paragraphIndex] || '';
+				if (currentPara) {
+					// Restart the paragraph cleanly; resume flow thereafter
+					ttsService.cancel();
+					ttsService.clearQueue();
+					setTimeout(() => { ttsService.speakQueuedAsync(currentPara); }, 10);
+				}
+			}
 		}
 	};
 
@@ -89,11 +191,18 @@ export default function App() {
 			setPausedByAgentLee(true);
 			// Switch to manual mode and stop any current narration, but do not pause the engine
 			setPresentationMode('Manual');
+			// Explicitly pause presentation and TTS when Agent Lee opens
+			setIsPaused(true);
+			// Ensure speaking is resumed for chat (chat should be heard even if speaking was paused)
+			setIsSpeakingPaused(false);
+			try { ttsService.resume(); } catch {}
 			ttsService.cancel();
 			ttsService.clearQueue();
 		} else if (pausedByAgentLee) {
 			setPausedByAgentLee(false);
+			// Resume auto mode but do not auto-advance immediately
 			setPresentationMode('Auto');
+			setIsPaused(false);
 		}
 	};
 
@@ -155,79 +264,259 @@ export default function App() {
 		settingsPanelRef.current.style.setProperty('--settings-panel-left', `${settingsPanelPos.left}px`);
 	}, [settingsPanelPos]);
 
+	// Cancel TTS only on manual navigation; avoid interrupting Auto mode narration
 	React.useEffect(() => {
-		ttsService.cancel();
-		ttsService.clearQueue();
-	}, [activeIndex]);
+		if (presentationMode !== 'Auto') {
+			ttsService.cancel();
+			ttsService.clearQueue();
+		}
+	}, [activeIndex, presentationMode]);
 
 	React.useEffect(() => {
+		if (!hasStarted) return;
 		let cancelled = false;
 
 		const runAuto = async () => {
-			if (autoRunRef.current.running) return;
-			if (presentationMode !== 'Auto' || isPaused || cancelled) return;
+			if (manualNavigationRef.current) {
+				console.log('[App] runAuto skipped - manual navigation detected');
+				manualNavigationRef.current = false; // Reset manual navigation flag
+				return;
+			}
+			if (autoRunRef.current.running) {
+				console.log('[App] runAuto skipped - already running');
+				return;
+			}
+			// Do not run autopilot while Agent Lee chat is open; presentation and chat are separate
+			if (presentationMode !== 'Auto' || cancelled || agentLeeOpen) {
+				console.log('[App] runAuto skipped - not in Auto mode or paused');
+				return;
+			}
+			console.log('[App] runAuto starting for slide', activeIndex, currentSlide?.title);
 			autoRunRef.current.running = true;
 
 			try {
-				const scriptedNarration = narrationTextForSlide(currentSlide);
-				if (scriptedNarration) {
-					await ttsService.speakQueuedAsync(scriptedNarration);
+				// If no voices are available, pause Auto to avoid flipping without narration
+				try {
+					const voices = ttsService.getAvailableVoices();
+					if (!voices || voices.length === 0) {
+						console.warn('[App] No TTS voices available; pausing Auto mode to prevent silent flipping');
+						setIsPaused(true);
+						setPresentationMode('Manual');
+						return;
+					}
+				} catch {}
+				// Paragraph-aware narration
+				const paragraphs = narrationParagraphsForSlide(currentSlide);
+				if (paragraphs.length) {
+					for (let i = 0; i < paragraphs.length; i++) {
+						if (cancelled || presentationMode !== 'Auto' || agentLeeOpen) return;
+						// If speaking paused, wait until resumed
+						while (isSpeakingPaused && !cancelled) {
+							await new Promise(res => setTimeout(res, 100));
+						}
+						if (cancelled) return;
+						narrationProgressRef.current = { slideIndex: activeIndex, paragraphIndex: i };
+						const { started } = await ttsService.speakQueuedAwaitStartAndEndAsync(paragraphs[i]);
+						if (!started) {
+							console.warn('[App] TTS did not start; pausing Auto mode to avoid rapid flipping');
+							setIsPaused(true);
+							setPresentationMode('Manual');
+							return;
+						}
+						await new Promise(res => setTimeout(res, 200));
+					}
 					if (!cancelled) {
 						setActiveIndex((prev) => Math.min(slides.length - 1, prev + 1));
 					}
 					return;
 				}
 
-				const prompt = (currentSlide as any).agentLeePromptHint || `Please narrate the key points for this slide: ${currentSlide?.title}`;
-				const resp = await sendMessageToAgentLee(prompt, currentSlide as any);
-				const preview = resp?.text ? String(resp.text).toLowerCase() : '';
-				const looksLikeError = !AGENT_STATUS.online || /encountered an error|agent lee is offline|could not generate|local model hub error|offline/i.test(preview);
-				if (looksLikeError) {
-					console.warn('Autopilot paused because Agent Lee appears offline.', resp, AGENT_STATUS);
-					setIsPaused(true);
-					setPresentationMode('Manual');
-					return;
-				}
-				if (cancelled) return;
-
-				await ttsService.speakQueuedAsync(resp?.text || '');
-
-				if (resp?.navigationTarget) {
-					navigateTo(resp.navigationTarget);
-				} else {
-					setActiveIndex((prev) => Math.min(slides.length - 1, prev + 1));
-				}
-			} catch (error) {
-				console.warn('Autopilot narration failed', error);
+				// No scripted narration available: do not call Agent Lee here.
+				// Presentation autopilot should only use scripted narration.
+				console.warn('[App] No scripted narration for current slide; pausing Auto mode to keep presentation deterministic');
+				setIsPaused(true);
+				setPresentationMode('Manual');
+				return;
 			} finally {
 				autoRunRef.current.running = false;
 			}
 		};
 
-		if (hasStarted && presentationMode === 'Auto' && !isPaused) {
-			runAuto();
-		}
-
+		runAuto();
 		return () => {
 			cancelled = true;
 		};
-	}, [hasStarted, presentationMode, isPaused, activeIndex, currentSlide, slides.length, narrationTextForSlide]);
+	}, [hasStarted, activeIndex, presentationMode, agentLeeOpen, currentSlide, slides, narrationParagraphsForSlide, isSpeakingPaused]);
 
+	// Navigate to a chart by slideId or chartKind, speak narration/explanation
 	React.useEffect(() => {
-		if (presentationMode === 'Auto' || isPaused || isMuted) return;
+		if (!hasStarted) return;
+		const handler = async (e: Event) => {
+			const detail = (e as CustomEvent).detail || {};
+			const { slideId, chartKind, page, tabId } = detail;
+			let idx = -1;
+			if (typeof page === 'number' && !Number.isNaN(page)) {
+				idx = Math.max(0, Math.min(slides.length - 1, page - 1));
+			} else if (slideId) {
+				idx = slides.findIndex((s) => s.id === slideId);
+			} else if (chartKind) {
+				idx = slides.findIndex((s) => (s.chartKind || '').toLowerCase() === String(chartKind).toLowerCase());
+			}
+			if (idx < 0) return;
+			// Cancel any pending TTS and navigate
+			ttsService.cancel();
+			ttsService.clearQueue();
+			setActiveIndex(idx);
+			// After navigation, optionally select a specific tab within the slide
+			try {
+				if (tabId) {
+					window.dispatchEvent(
+						new CustomEvent('agentlee:selectTab', {
+							detail: { slideId: slides[idx]?.id, tabId: String(tabId) },
+						})
+					);
+				}
+			} catch {}
+			// After navigation, in Manual mode, speak slide narration followed by chart explanation
+			const slide = slides[idx];
+			if (!agentLeeOpen && presentationMode !== 'Auto' && !isSpeakingPaused && !isMuted) {
+				const scriptedNarration = narrationTextForSlide(slide);
+				if (scriptedNarration) await ttsService.speakQueuedAsync(scriptedNarration);
+				try {
+					const reg = (window as any).AgentLeeChartRegistry;
+					const ctx = reg?.getChartContextForSlide?.(slide.id) || null;
+					const prompt = ctx ? `Explain this chart succinctly and tie to ROI, safety, and growth:\n${ctx}` : `Explain the chart on slide "${slide.title}".`;
+					const resp = await sendMessageToAgentLee(prompt, slide as any);
+					const text = resp?.text || '';
+					if (text) await ttsService.speakQueuedAsync(text);
+				} catch {}
+			}
+		};
+		window.addEventListener('agentlee:navigateToChart', handler as EventListener);
+		window.addEventListener('agentlee:navigateToTab', handler as EventListener); // alias
+		return () => {
+			window.removeEventListener('agentlee:navigateToChart', handler as EventListener);
+			window.removeEventListener('agentlee:navigateToTab', handler as EventListener);
+		};
+	}, [hasStarted, slides, presentationMode, isSpeakingPaused, isMuted, agentLeeOpen, narrationTextForSlide]);
+
+	// Explain current chart on demand with KB + chart context
+	React.useEffect(() => {
+		if (!hasStarted) return;
+		const handler = async () => {
+			const slide = currentSlide;
+			try {
+				const reg = (window as any).AgentLeeChartRegistry;
+				const ctx = reg?.getChartContextForSlide?.(slide?.id) || null;
+				const prompt = ctx ? `Explain this chart succinctly and tie to ROI, safety, and growth:\n${ctx}` : `Explain the chart on slide "${slide?.title}".`;
+				const resp = await sendMessageToAgentLee(prompt, slide as any);
+				const text = resp?.text || '';
+				if (text) await ttsService.speakQueuedAsync(text);
+			} catch (err) {
+				console.warn('Explain chart failed', err);
+			}
+		};
+		window.addEventListener('agentlee:explainChart', handler as EventListener);
+		return () => window.removeEventListener('agentlee:explainChart', handler as EventListener);
+	}, [hasStarted, currentSlide]);
+
+	// Manual mode: speak narration for any slide when user navigates or asks Agent Lee
+	React.useEffect(() => {
+		if (!hasStarted) return;
+		if (presentationMode === 'Auto' || isSpeakingPaused || isMuted || agentLeeOpen) return;
 		if (!currentSlide) return;
-		const isEvidenceSlide = currentSlide.id === 'evidenceLocker';
-		if (!isEvidenceSlide) return;
-		const scriptedNarration = narrationTextForSlide(currentSlide);
-		if (!scriptedNarration) return;
+		const paragraphs = narrationParagraphsForSlide(currentSlide);
+		if (!paragraphs.length) return;
 		(async () => {
 			try {
-				await ttsService.speakQueuedAsync(scriptedNarration);
+				for (let i = 0; i < paragraphs.length; i++) {
+					if (isSpeakingPaused || isMuted || agentLeeOpen) break;
+					narrationProgressRef.current = { slideIndex: activeIndex, paragraphIndex: i };
+					await ttsService.speakQueuedAsync(paragraphs[i]);
+				}
 			} catch (error) {
-				console.warn('Manual evidence narration failed', error);
+				console.warn('Manual narration failed', error);
 			}
 		})();
-	}, [presentationMode, isPaused, isMuted, currentSlide, narrationTextForSlide]);
+		}, [hasStarted, presentationMode, isSpeakingPaused, isMuted, agentLeeOpen, currentSlide, narrationParagraphsForSlide, activeIndex]);
+
+	// Listen for chart point selections and have Agent Lee explain the point
+	React.useEffect(() => {
+		const handler = async (e: Event) => {
+			try {
+				const detail = (e as CustomEvent).detail || (window as any).AGENT_SELECTED_POINT;
+				if (!detail) return;
+				const { x, y, seriesKey, chartKind } = detail;
+				const slideTitle = currentSlide?.title || '';
+				const prompt = `Explain the selected data point on "${slideTitle}": chart=${chartKind || currentSlide?.chartKind}, x=${x}, y=${y}, series=${seriesKey}. Keep it concise and actionable.`;
+				const resp = await sendMessageToAgentLee(prompt, currentSlide as any);
+				const text = resp?.text || `Selected point ${x}: ${y ?? ''}`;
+				await ttsService.speakQueuedAsync(text);
+			} catch (err) {
+				console.warn('Agent point explain failed', err);
+			}
+		};
+		window.addEventListener('agentlee:dataPointSelected', handler as EventListener);
+		return () => window.removeEventListener('agentlee:dataPointSelected', handler as EventListener);
+	}, [currentSlide]);
+
+	// Quick-action triggers: map keywords/IDs to charts and tabs, then speak
+	React.useEffect(() => {
+		if (!hasStarted) return;
+		const invokeQuick = async (raw: any) => {
+			const text = String(raw?.text || raw || '').toLowerCase();
+			if (!text) return;
+			// Keyword → chartKind mapping
+			const goto = (detail: any) => {
+				try {
+					window.dispatchEvent(new CustomEvent('agentlee:navigateToChart', { detail }));
+				} catch {}
+			};
+			// Speak helper after navigation
+			const speak = async (msg?: string) => {
+				if (!msg) return;
+				try { await ttsService.speakQueuedAsync(msg); } catch {}
+			};
+			// Chart keywords
+			if (text.includes('cost analysis') || text.includes('roi') || text.includes('savings')) {
+				goto({ chartKind: 'ProjectCosts' });
+				await speak('Opening Project Costs analysis and ROI context.');
+				return;
+			}
+			if (text.includes('performance metrics') || text.includes('metrics')) {
+				goto({ chartKind: 'TechStack' });
+				await speak('Showing performance metrics chart and key indicators.');
+				return;
+			}
+			if (text.includes('ai sewers') || text.includes('ai momentum')) {
+				goto({ chartKind: 'AISewersViz' });
+				await speak('Opening AI momentum visualization.');
+				return;
+			}
+			// Page 11 tab shortcuts by IDs
+			const page11Aliases = ['california 11','pm11','ci11','rs11','tc11'];
+			if (page11Aliases.some(a => text.includes(a))) {
+				// Navigate to page 11 and select appropriate tab based on keyword
+				let tabId = 'Overview';
+				if (text.includes('pm11')) tabId = 'Performance';
+				else if (text.includes('ci11')) tabId = 'CostIndex';
+				else if (text.includes('rs11')) tabId = 'ROI';
+				else if (text.includes('tc11') || text.includes('california 11')) tabId = 'TrenchlessCosts';
+				try {
+					window.dispatchEvent(new CustomEvent('agentlee:navigateToChart', { detail: { page: 11, tabId } }));
+					await speak('Navigating to page eleven and opening requested panel.');
+				} catch {}
+				return;
+			}
+		};
+		const onUtter = (e: Event) => invokeQuick((e as CustomEvent).detail);
+		window.addEventListener('agentlee:quickAction', onUtter as EventListener);
+		window.addEventListener('agentlee:utterance', onUtter as EventListener);
+		return () => {
+			window.removeEventListener('agentlee:quickAction', onUtter as EventListener);
+			window.removeEventListener('agentlee:utterance', onUtter as EventListener);
+		};
+	}, [hasStarted]);
 
 	const { preferred: preferredVoiceOptions, remaining: remainingVoiceOptions } = React.useMemo(() => mapVoicesToPreferred(availableVoices), [availableVoices]);
 
@@ -298,22 +587,14 @@ export default function App() {
 					/>
 
 					<div className="flex items-center ml-2 gap-2">
+						{/* Mute button removed per updated spec (use pause/resume only) */}
 						<button
-							aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
-							onClick={toggleMute}
-							className={`flex items-center justify-center w-10 h-10 rounded-md text-white shadow-md transition-colors ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}
-							title={isMuted ? 'Unmute' : 'Mute'}
-						>
-							{isMuted ? <SpeakerXMarkIcon className="w-5 h-5" /> : <SpeakerWaveIcon className="w-5 h-5" />}
-						</button>
-
-						<button
-							aria-label={isPaused ? 'Resume narration' : 'Pause narration'}
+							aria-label={isSpeakingPaused ? 'Resume speaking' : 'Pause speaking'}
 							onClick={togglePause}
 							className="flex items-center justify-center w-10 h-10 rounded-md text-white shadow-md transition-colors bg-indigo-600 hover:bg-indigo-500"
-							title={isPaused ? 'Resume' : 'Pause'}
+							title={isSpeakingPaused ? 'Resume Speaking' : 'Pause Speaking'}
 						>
-							{isPaused ? <PlayCircleIcon className="w-5 h-5" /> : <PauseCircleIcon className="w-5 h-5" />}
+							{isSpeakingPaused ? <PlayCircleIcon className="w-5 h-5" /> : <PauseCircleIcon className="w-5 h-5" />}
 						</button>
 
 						<button
@@ -377,10 +658,7 @@ export default function App() {
 								<button onClick={() => setPresentationMode('Auto')} className={`px-3 py-1 rounded ${presentationMode === 'Auto' ? 'bg-orange-600' : 'bg-slate-800'}`}>Auto</button>
 							</div>
 						</div>
-						<div className="flex items-center justify-between">
-							<div className="text-sm">TTS Volume</div>
-							<div className="text-sm">{isMuted ? 'Muted' : 'On'}</div>
-						</div>
+						{/* Volume controls removed per updated spec (use pause/resume only) */}
 						<div className="flex flex-col gap-4">
 							<div className="flex items-center justify-between gap-3">
 								<div className="text-sm">TTS Voice</div>

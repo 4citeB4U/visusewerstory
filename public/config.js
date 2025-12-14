@@ -1,4 +1,39 @@
-// Runtime configuration stub for browser. Put any local-only flags here.
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: CORE.CONFIG.RUNTIME.ENV
+REGION: 🟢 CORE
+
+STACK: LANG=js; FW=none; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: config
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=n/a;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Public Runtime Configuration",
+  "programmingLanguage": "JavaScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "Configuration", "Runtime", "Environment"],
+  "identifier": "CORE.CONFIG.RUNTIME.ENV",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Public runtime configuration; WHY=Browser environment setup with URL sanitization; WHO=Agent Lee System; WHERE=/public/config.js; WHEN=2025-12-09; HOW=IIFE + localStorage + URL validation
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 (function () {
   function sanitize(base) {
     if (!base || typeof base !== 'string') return null;

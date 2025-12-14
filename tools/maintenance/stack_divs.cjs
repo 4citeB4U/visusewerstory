@@ -1,3 +1,8 @@
+// Leeway Industries — Visu-Sewer Story
+// Module: tools/maintenance/stack_divs.cjs
+// Purpose: Maintenance script to stack/format divs for readability in QA
+// Date: 2025-12-07
+// Note: Internal use. Do not include confidential data in source.
 const fs = require('fs');
 
 const targetFile = 'src/App.tsx';

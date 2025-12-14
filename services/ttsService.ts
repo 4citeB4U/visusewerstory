@@ -1,3 +1,39 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.COMPONENT.TTS.SERVICE
+REGION: 🔵 UI
+
+STACK: LANG=ts; FW=none; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Text-to-Speech Service",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "TTS", "Voice", "Accessibility"],
+  "identifier": "UI.COMPONENT.TTS.SERVICE",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Text-to-speech service wrapper; WHY=Unified TTS interface with voice management; WHO=Agent Lee System; WHERE=/services/ttsService.ts; WHEN=2025-12-09; HOW=Web Speech API + voice preferences + queue management
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 import { preferredVoiceLabels } from "./voicePreferences";
 
 // Simple wrapper for Web Speech API
@@ -8,6 +44,7 @@ class TTSService {
   private isMuted = false;
   private queue: Array<{ text: string; onEnd?: () => void; onStart?: () => void }> = [];
   private isProcessingQueue = false;
+  private currentText: string | null = null;
   private rate: number;
   private pitch: number;
 
@@ -180,14 +217,16 @@ class TTSService {
     }
 
   private _speakImmediate(text: string, onEnd?: () => void, onStart?: () => void) {
+    console.log('[TTS] Speaking:', text.slice(0, 50), 'Voice:', this.voice?.name);
+    this.currentText = text;
     const utterance = new SpeechSynthesisUtterance(text);
     if (this.voice) utterance.voice = this.voice;
     utterance.rate = this.rate;
     utterance.pitch = this.pitch;
     utterance.volume = this.isMuted ? 0 : 1;
-    utterance.onstart = () => { if (onStart) onStart(); };
-    utterance.onend = () => { if (onEnd) onEnd(); this._processQueue(); };
-    utterance.onerror = (_e) => { if (onEnd) onEnd(); this._processQueue(); };
+    utterance.onstart = () => { console.log('[TTS] Started'); if (onStart) onStart(); };
+    utterance.onend = () => { console.log('[TTS] Ended'); if (onEnd) onEnd(); this._processQueue(); };
+    utterance.onerror = (_e) => { console.log('[TTS] Error:', _e); if (onEnd) onEnd(); this._processQueue(); };
     this.synth.speak(utterance);
   }
 
@@ -222,6 +261,32 @@ class TTSService {
     });
   }
 
+  // Await both start and end; if speech never starts within timeout, resolve with started=false
+  public speakQueuedAwaitStartAndEndAsync(text: string, startTimeoutMs = 1500): Promise<{ started: boolean }> {
+    if (!text) return Promise.resolve({ started: false });
+    return new Promise((resolve) => {
+      let started = false;
+      let startTimer: number | undefined;
+      const onStart = () => {
+        started = true;
+        if (startTimer) clearTimeout(startTimer as unknown as number);
+      };
+      const onEnd = () => {
+        if (startTimer) clearTimeout(startTimer as unknown as number);
+        resolve({ started });
+      };
+      // Start timeout: if onstart never fires, we still resolve, indicating started=false
+      startTimer = (setTimeout(() => {
+        // If not started by timeout, allow the queue to continue and resolve when current item ends
+        // But if nothing is speaking, resolve now to avoid infinite wait
+        if (!this.synth.speaking && !this.synth.paused) {
+          resolve({ started: false });
+        }
+      }, Math.max(300, startTimeoutMs)) as unknown) as number;
+      this.speakQueued(text, onEnd, onStart);
+    });
+  }
+
   public pause() {
     if (this.synth.speaking && !this.synth.paused) {
       this.synth.pause();
@@ -249,8 +314,13 @@ class TTSService {
 
   public setMute(muted: boolean) {
     this.isMuted = muted;
-    if (muted && this.synth.speaking) {
-        this.cancel();
+    // If currently speaking, restart the same utterance with updated volume to ensure immediate silence
+    if (this.synth.speaking && this.currentText) {
+      this.cancel();
+      const text = this.currentText;
+      setTimeout(() => {
+        this._speakImmediate(text);
+      }, 50);
     }
   }
 

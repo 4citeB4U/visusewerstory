@@ -1,3 +1,38 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.COMPONENT.BACKGROUND.FLAG
+REGION: 🔵 UI
+
+STACK: LANG=tsx; FW=react; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Animated Flag Background Component",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "UI", "Animation", "Canvas"],
+  "identifier": "UI.COMPONENT.BACKGROUND.FLAG",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Animated flag background component; WHY=Visual branding and atmosphere; WHO=Agent Lee System; WHERE=/components/FlagBackground.tsx; WHEN=2025-12-09; HOW=Canvas API + React hooks + animation
+SPDX-License-Identifier: MIT
+============================================================================ */
 
 import React, { useEffect, useRef } from 'react';
 
