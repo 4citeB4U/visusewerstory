@@ -1,3 +1,38 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.COMPONENT.CHARTS.SUITE
+REGION: 🔵 UI
+
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Comprehensive Chart Component Library",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "UI", "Charts", "DataVisualization"],
+  "identifier": "UI.COMPONENT.CHARTS.SUITE",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Comprehensive chart component library; WHY=Render all data visualization types for story slides; WHO=Agent Lee System; WHERE=/components/Charts.tsx; WHEN=2025-12-09; HOW=Recharts + responsive design + multiple chart configurations
+SPDX-License-Identifier: MIT
+============================================================================ */
 
 import React, { useEffect, useState } from "react";
 import {
@@ -99,6 +134,15 @@ const EvidenceTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// --- Utility: Notify Agent Lee of selected data point ---
+const notifyAgentOfPoint = (detail: any) => {
+    try {
+        (window as any).AGENT_SELECTED_POINT = detail;
+        const ev = new CustomEvent('agentlee:dataPointSelected', { detail });
+        window.dispatchEvent(ev);
+    } catch {}
+};
+
 // --- Acquisitions Map (National Platform High-Fidelity) ---
 export const AcquisitionsMap: React.FC<{ data?: AcquisitionRecord[] }> = ({ data = [] }) => {
     const hq = (data || []).find(x => x && x.id === 'visu') || { coordinates: { x: 0, y: 0 } };
@@ -162,78 +206,90 @@ export const AcquisitionsMap: React.FC<{ data?: AcquisitionRecord[] }> = ({ data
                 <div className="h-1 w-36 mx-auto bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 rounded-full mt-3 opacity-90" />
             </div>
 
-            {/* Only images scroll, header stays fixed */}
-            <div className="flex-1 w-full flex flex-col gap-4 overflow-y-auto max-h-[800px]">
-                <div className="flex-1 w-full flex items-stretch">
-                    <ImageCard
-                        src={`${import.meta.env.BASE_URL}images/orgchart.png`}
-                        alt="Organizational Chart"
-                        fit="contain"
-                        containerClass="bg-slate-800/10"
-                    />
-                </div>
-
-                <div className="flex-1 w-full flex items-stretch">
-                    <ImageCard
-                        src={`${import.meta.env.BASE_URL}images/geographic-footprint.png`}
-                        alt="Geographic Footprint"
-                        fit="contain"
-                        containerClass="bg-slate-800/20"
-                    />
-                </div>
-            </div>
+                        {/* Only images scroll, header stays fixed; main container does not scroll */}
+                        <div className="flex-1 w-full flex flex-col gap-4 overflow-y-auto max-h-[800px]" data-agentlee-scroll="acquisitions">
+                                <div className="flex-1 w-full flex items-stretch">
+                                        <ImageCard
+                                                src={`${import.meta.env.BASE_URL}images/geographic-footprint.png`}
+                                                alt="Geographic Footprint"
+                                                fit="contain"
+                                                containerClass="bg-slate-800/20"
+                                        />
+                                </div>
+                        </div>
         </div>
     );
 };
 
 // --- CCTV Chart ---
 export const CctvChart: React.FC<{ data: CctvInspectionRecord[], isSpeaking?: boolean }> = ({ data, isSpeaking = false }) => {
-  const { activeIndex, setHoverIndex } = useChartHighlight(data.length, isSpeaking);
+    const { activeIndex, setHoverIndex } = useChartHighlight(data.length, isSpeaking);
 
-  return (
-    <div className="h-full w-full p-4 bg-slate-900/60 rounded-xl border border-blue-900/50 flex flex-col backdrop-blur-sm">
-      <div className="flex justify-between items-end mb-4 border-b border-slate-700 pb-2">
-        <h3 className="text-slate-200 text-sm font-semibold uppercase tracking-wider">Inspection Efficiency</h3>
-        <span className="text-[10px] text-green-400 font-mono">AI ACCELERATION ACTIVE</span>
-      </div>
-      <div className="flex-1 w-full min-h-[250px]">
-        <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-                data={data} 
-                layout="vertical" 
-                margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-                onMouseMove={(state) => {
-                    const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
-                    if (idx !== null) setHoverIndex(idx);
-                }}
-                onMouseLeave={() => setHoverIndex(null)}
-            >
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} />
-            <XAxis type="number" stroke="#94a3b8" tick={{fontSize: 10}} label={{ value: 'Minutes per Segment', position: 'insideBottom', offset: -5, fill: '#94a3b8', fontSize: 10 }} />
-            <YAxis dataKey="segmentId" type="category" stroke="#94a3b8" width={40} tick={{fontSize: 10}} />
-            <Tooltip content={<EvidenceTooltip />} cursor={{fill: 'rgba(255,255,255,0.1)'}} />
-            <Legend wrapperStyle={{fontSize: '10px', paddingTop: '10px'}} />
-            <Bar 
-                dataKey="reviewTimeMinutes" 
-                name="Review Time (min)" 
-                radius={[0, 4, 4, 0]}
-                animationDuration={2000}
-                animationEasing="ease-out"
-            >
-                {data.map((entry, index) => (
-                    <Cell 
-                        key={`cell-${index}`} 
-                        fill={index === activeIndex ? COLORS.activeBlack : (entry.method === 'AI-Assisted' ? COLORS.success : COLORS.usBlue)} 
-                        stroke={index === activeIndex ? 'white' : 'none'}
-                        strokeWidth={index === activeIndex ? 2 : 0}
+    return (
+        <div
+            className="h-full w-full p-4 bg-slate-900/60 rounded-xl border border-blue-900/50 flex flex-col backdrop-blur-sm overflow-auto"
+            data-agentlee-scroll="ecosystem"
+        >
+            <div className="flex justify-between items-end mb-4 border-b border-slate-700 pb-2">
+                <h3 className="text-slate-200 text-sm font-semibold uppercase tracking-wider">Inspection Efficiency</h3>
+                <span className="text-[10px] text-green-400 font-mono">AI ACCELERATION ACTIVE</span>
+            </div>
+            {/* Split the visualization area: top image and bottom chart, each 50% */}
+            <div className="flex-1 w-full grid grid-rows-2 gap-2 min-h-[250px]">
+                {/* Top: Organizational chart image filling edges */}
+                <div className="row-span-1 relative rounded-md overflow-hidden border border-slate-800 bg-slate-900">
+                    <img
+                        src={`${import.meta.env.BASE_URL}images/orgchart.png`}
+                        alt="Organizational Chart"
+                        className="absolute inset-0 w-full h-full object-cover object-center"
                     />
-                ))}
-            </Bar>
-            </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
+                </div>
+                {/* Bottom: Inspection Efficiency chart occupies 50% */}
+                <div className="row-span-1">
+                    <ResponsiveContainer width="100%" height="100%">
+                            <BarChart 
+                                    data={data} 
+                                    layout="vertical" 
+                                    margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                                    onClick={(state: any) => {
+                                            const ap = Array.isArray(state?.activePayload) ? state.activePayload[0] : null;
+                                            const x = ap?.payload?.segmentId ?? ap?.payload?.name ?? ap?.payload?.year ?? null;
+                                            const y = ap?.payload?.reviewTimeMinutes ?? ap?.value ?? null;
+                                    if (x != null) notifyAgentOfPoint({ x, y, seriesKey: 'Review Time', chartKind: 'CCTV' });
+                                    }}
+                                    onMouseMove={(state) => {
+                                            const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
+                                            if (idx !== null) setHoverIndex(idx);
+                                    }}
+                                    onMouseLeave={() => setHoverIndex(null)}
+                            >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={true} />
+                            <XAxis type="number" stroke="#94a3b8" tick={{fontSize: 10}} label={{ value: 'Minutes per Segment', position: 'insideBottom', offset: -5, fill: '#94a3b8', fontSize: 10 }} />
+                            <YAxis dataKey="segmentId" type="category" stroke="#94a3b8" width={40} tick={{fontSize: 10}} />
+                            <Tooltip content={<EvidenceTooltip />} cursor={{fill: 'rgba(255,255,255,0.1)'}} />
+                            <Legend wrapperStyle={{fontSize: '10px', paddingTop: '10px'}} />
+                            <Bar 
+                                    dataKey="reviewTimeMinutes" 
+                                    name="Review Time (min)" 
+                                    radius={[0, 4, 4, 0]}
+                                    animationDuration={2000}
+                                    animationEasing="ease-out"
+                            >
+                                    {data.map((entry, index) => (
+                                            <Cell 
+                                                    key={`cell-${index}`} 
+                                                    fill={index === activeIndex ? COLORS.activeBlack : (entry.method === 'AI-Assisted' ? COLORS.success : COLORS.usBlue)} 
+                                                    stroke={index === activeIndex ? 'white' : 'none'}
+                                                    strokeWidth={index === activeIndex ? 2 : 0}
+                                            />
+                                    ))}
+                            </Bar>
+                            </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 // --- Project Costs Chart ---
@@ -251,6 +307,12 @@ export const ProjectCostsChart: React.FC<{ data: ProjectCostRecord[], isSpeaking
             <ComposedChart 
                 data={data} 
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                onClick={(state: any) => {
+                    const ap = Array.isArray(state?.activePayload) ? state.activePayload[0] : null;
+                    const x = ap?.payload?.method ?? null;
+                    const y = ap?.payload?.actualAmount ?? ap?.value ?? null;
+                    if (x != null) (window as any).AGENT_SELECTED_POINT = { x, seriesKey: 'Actual Cost ($)' };
+                }}
                 onMouseMove={(state) => {
                     const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
                     if (idx !== null) setHoverIndex(idx);
@@ -334,6 +396,13 @@ export const ScheduleChart: React.FC<{ data: OperationalVelocityRecord[], isSpea
             <AreaChart 
                 data={chartData} 
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                onClick={(state: any) => {
+                    const ap = Array.isArray(state?.activePayload) ? state.activePayload[0] : null;
+                    const x = ap?.payload?.year ?? null;
+                    const y = ap?.payload?.midwest ?? ap?.payload?.midAtlantic ?? ap?.value ?? null;
+                    const key = ap?.dataKey === 'midAtlantic' ? 'Mid-Atlantic Capacity' : 'Midwest Capacity';
+                    if (x != null) (window as any).AGENT_SELECTED_POINT = { x, seriesKey: key };
+                }}
                 onMouseMove={(state) => {
                     const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
                     if (idx !== null) setHoverIndex(idx);
@@ -485,20 +554,20 @@ export const EcosystemVisual: React.FC<{ data: EcosystemRecord[] }> = ({ data })
             </div>
 
             <div className="flex flex-col md:flex-row gap-6 flex-1">
-                <div className="w-full md:w-2/5 flex items-center justify-center bg-slate-950/40 rounded-lg border border-slate-700/60 p-4">
+                    <div className="w-full md:w-[70%] flex items-center justify-center bg-slate-950/40 rounded-lg border border-slate-700/60 p-4 h-full">
                     <img
                         src={`${import.meta.env.BASE_URL}images/visu-sewer-people-matter.png`}
                         alt="People Matter"
-                        className="w-full h-full max-h-[420px] object-contain rounded-md shadow-lg"
+                            className="w-full h-full object-contain rounded-md shadow-lg"
                     />
                 </div>
 
-                <div className="w-full md:w-3/5">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="w-full md:w-[30%]">
+                    <div className="grid grid-cols-1 gap-3">
                         {data.length > 0 && (
                             data.map((item, i) => {
                                 const value = Math.max(0, Math.min(100, item.impactScore));
-                                const r = 36; // radius
+                                const r = 28; // smaller radius
                                 const c = 2 * Math.PI * r;
                                 const dash = (value / 100) * c;
 
@@ -506,20 +575,19 @@ export const EcosystemVisual: React.FC<{ data: EcosystemRecord[] }> = ({ data })
                                 const strokeColor = item.category === 'Safety' ? COLORS.usRed : item.category === 'Robotics' ? COLORS.usBlue : COLORS.success;
 
                                 return (
-                                    <div key={i} className="bg-slate-900/80 p-4 rounded-lg border border-slate-700 shadow-lg flex flex-col items-center">
-                                        <div className={`text-sm uppercase font-bold mb-3 text-center ${colorClass}`}>{item.category}</div>
+                                    <div key={i} className="bg-slate-900/80 p-2 rounded-lg border border-slate-700 shadow-lg flex flex-col items-center">
+                                        <div className={`text-[10px] uppercase font-bold mb-1 text-center ${colorClass}`}>{item.category}</div>
 
-                                        <div className="relative w-28 h-28 mb-3 flex items-center justify-center">
-                                            <svg width="100" height="100" viewBox="0 0 100 100" className="transform rotate-[-90deg]">
+                                        <div className="relative w-20 h-20 mb-1 flex items-center justify-center">
+                                            <svg width="80" height="80" viewBox="0 0 100 100" className="transform rotate-[-90deg]">
                                                 <circle cx="50" cy="50" r={r} stroke="#111827" strokeWidth="8" fill="none" />
-                                                <circle cx="50" cy="50" r={r} stroke={strokeColor} strokeWidth="8" strokeLinecap="round" fill="none"
+                                                <circle cx="50" cy="50" r={r} stroke={strokeColor} strokeWidth="6" strokeLinecap="round" fill="none"
                                                     strokeDasharray={`${dash} ${c - dash}`} />
                                             </svg>
-                                            <div className="absolute text-white font-bold text-lg transform rotate-[90deg]">{value}%</div>
+                                            <div className="absolute text-white font-bold text-[12px] transform rotate-[90deg]">{value}%</div>
                                         </div>
-
-                                        <div className="text-xs text-slate-300 mb-2">Partners</div>
-                                        <ul className="text-[12px] text-slate-400 list-disc list-inside w-full">
+                                        <div className="text-[9px] text-slate-300 mb-1">Partners</div>
+                                        <ul className="text-[10px] text-slate-400 list-disc list-inside w-full">
                                             {item.partners.slice(0,3).map((p, idx) => <li key={idx}>{p}</li>)}
                                         </ul>
                                     </div>
@@ -725,6 +793,12 @@ export const TimelineVisual: React.FC<{ data?: HistoricalDataPoint[], isSpeaking
                     <AreaChart 
                         data={data} 
                         margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+                        onClick={(state: any) => {
+                            const ap = Array.isArray(state?.activePayload) ? state.activePayload[0] : null;
+                            const x = ap?.payload?.year ?? null;
+                            const y = ap?.payload?.value ?? ap?.value ?? null;
+                            if (x != null) (window as any).AGENT_SELECTED_POINT = { x, seriesKey: 'Value' };
+                        }}
                         onMouseMove={(state) => {
                             const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
                             if (idx !== null) setHoverIndex(idx);
@@ -775,6 +849,12 @@ export const GrowthBridgeChart: React.FC<{ data: FinancialRecord[], isSpeaking?:
             <BarChart 
                 data={data} 
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                onClick={(state: any) => {
+                    const ap = Array.isArray(state?.activePayload) ? state.activePayload[0] : null;
+                    const x = ap?.payload?.category ?? null;
+                    const y = ap?.payload?.value ?? ap?.value ?? null;
+                    if (x != null) (window as any).AGENT_SELECTED_POINT = { x, seriesKey: 'Revenue ($M)' };
+                }}
                 onMouseMove={(state) => {
                     const idx = typeof state.activeTooltipIndex === 'number' ? state.activeTooltipIndex : null;
                     if (idx !== null) setHoverIndex(idx);

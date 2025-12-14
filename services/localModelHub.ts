@@ -1,6 +1,49 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: AI.MEMORY.LOCAL.PRIMARY
+REGION: 🧠 AI
+
+STACK: LANG=ts; FW=none; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: agent-module
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=n/a;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Local AI Model Hub",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "AI", "ModelManagement", "Transformers"],
+  "identifier": "AI.MEMORY.LOCAL.PRIMARY",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Local AI model management hub; WHY=Orchestrate loading and access to transformers models; WHO=Agent Lee System; WHERE=/services/localModelHub.ts; WHEN=2025-12-09; HOW=Transformers.js + pipeline management + model warmup
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 import { env, pipeline } from '@xenova/transformers';
 
 const runningInBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+
+type ModelHubMode = 'auto' | 'local-only' | 'cdn-only';
+
+const STORAGE_KEYS = {
+  baseUrl: 'agentlee_model_base_url',
+  mode: 'agentlee_model_mode',
+} as const;
 
 const sanitizeBaseUrl = (value: unknown): string | null => {
   if (!value || typeof value !== 'string') return null;
@@ -12,10 +55,46 @@ const sanitizeBaseUrl = (value: unknown): string | null => {
 const readStoredModelBase = (): string | null => {
   if (!runningInBrowser) return null;
   try {
-    const stored = window.localStorage?.getItem('agentlee_model_base_url');
+    const stored = window.localStorage?.getItem(STORAGE_KEYS.baseUrl);
     return sanitizeBaseUrl(stored);
   } catch {
     return null;
+  }
+};
+
+const writeStoredModelBase = (value: string | null) => {
+  if (!runningInBrowser) return;
+  try {
+    if (!value) {
+      window.localStorage?.removeItem(STORAGE_KEYS.baseUrl);
+    } else {
+      window.localStorage?.setItem(STORAGE_KEYS.baseUrl, value);
+    }
+  } catch {
+    /* ignore */
+  }
+};
+
+const readStoredMode = (): ModelHubMode | null => {
+  if (!runningInBrowser) return null;
+  try {
+    const raw = window.localStorage?.getItem(STORAGE_KEYS.mode) as ModelHubMode | null;
+    return raw || null;
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredMode = (mode: ModelHubMode | null) => {
+  if (!runningInBrowser) return;
+  try {
+    if (!mode) {
+      window.localStorage?.removeItem(STORAGE_KEYS.mode);
+    } else {
+      window.localStorage?.setItem(STORAGE_KEYS.mode, mode);
+    }
+  } catch {
+    /* ignore */
   }
 };
 
@@ -34,51 +113,129 @@ const inferLocalModelServer = (): string | null => {
   }
 };
 
-const detectLocalModelBase = (): string | null => {
+const fetchWithTimeout = async (url: string, ms: number): Promise<Response | null> => {
+  if (!runningInBrowser || typeof fetch === 'undefined') return null;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    return res;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(id);
+  }
+};
+
+const isLocalHubHealthy = async (baseUrl: string, timeoutMs: number): Promise<boolean> => {
+  const clean = sanitizeBaseUrl(baseUrl);
+  if (!clean) return false;
+  const healthUrl = `${clean.replace(/\/$/, '')}/health`;
+  const res = await fetchWithTimeout(healthUrl, timeoutMs);
+  return !!res && res.ok;
+};
+
+export const resolveModelBaseUrl = async (
+  mode?: ModelHubMode,
+  timeoutMs: number = 800,
+): Promise<string | null> => {
+  const effectiveMode = mode || readStoredMode() || 'auto';
+
   const winBase = runningInBrowser
     ? sanitizeBaseUrl((window as any)?.AGENTLEE_MODEL_BASE_URL ?? (window as any)?.AGENTLEE_RUNTIME?.MODEL_BASE_URL)
     : null;
-  if (winBase) return winBase;
 
   const stored = readStoredModelBase();
-  if (stored) {
-    if (runningInBrowser) (window as any).AGENTLEE_MODEL_BASE_URL = stored;
-    return stored;
-  }
-
   const inferred = inferLocalModelServer();
-  if (inferred) {
-    if (runningInBrowser) (window as any).AGENTLEE_MODEL_BASE_URL = inferred;
-    return inferred;
+  const candidate = winBase || stored || inferred;
+
+  if (effectiveMode === 'local-only') {
+    const local = candidate || inferLocalModelServer();
+    const clean = sanitizeBaseUrl(local);
+    if (clean) {
+      writeStoredModelBase(clean);
+      writeStoredMode('local-only');
+      if (runningInBrowser) (window as any).AGENTLEE_MODEL_BASE_URL = clean;
+      return clean;
+    }
+    return null;
   }
 
-  return null;
+  if (effectiveMode === 'cdn-only') {
+    writeStoredMode('cdn-only');
+    return null;
+  }
+
+  const clean = candidate ? sanitizeBaseUrl(candidate) : null;
+  if (!clean) {
+    writeStoredMode('auto');
+    return null;
+  }
+
+  const healthy = await isLocalHubHealthy(clean, timeoutMs);
+  if (!healthy) {
+    writeStoredMode('auto');
+    return null;
+  }
+
+  writeStoredModelBase(clean);
+  writeStoredMode('auto');
+  if (runningInBrowser) (window as any).AGENTLEE_MODEL_BASE_URL = clean;
+  return clean;
 };
 
-const localModelBase = detectLocalModelBase();
+export const clearModelBaseOverrides = () => {
+  writeStoredModelBase(null);
+  writeStoredMode(null);
+  if (runningInBrowser) {
+    try {
+      delete (window as any).AGENTLEE_MODEL_BASE_URL;
+    } catch {
+      /* ignore */
+    }
+  }
+};
+
+// In Option A (no local hub by default), we do not trust any
+// existing AGENTLEE_MODEL_BASE_URL unless resolveModelBaseUrl()
+// has explicitly validated it. Treat browser as CDN-only at init.
+const localModelBase: string | null = null;
 const shouldAvoidGatedDownloads = runningInBrowser && !localModelBase;
 
 export type ModelKey = 'planner' | 'brain' | 'companion' | 'voice' | 'librarian';
 
-const BROWSER_GATED_MODELS = new Set<string>([
-  'HuggingFaceTB/SmolLM2-1.7B-Instruct',
-  'HuggingFaceTB/SmolLM2-360M-Instruct',
-  'HuggingFaceTB/SmolLM2-135M-Instruct',
-  'Xenova/SmolLM2-360M-Instruct',
-  'Xenova/SmolLM-360M-Instruct',
-  'Xenova/SmolLM-135M-Instruct',
-]);
+// Central model registry for all local/cdn paths.
+// Option A: use open, anonymous models only (no HF auth, no local hub).
+// DistilGPT2 is small and public; good enough for local narration.
+const MODEL_REGISTRY: Record<ModelKey, string> = {
+  planner: 'Xenova/distilgpt2',
+  brain: 'Xenova/distilgpt2',
+  companion: 'Xenova/distilgpt2',
+  voice: 'Xenova/distilgpt2',
+  librarian: 'Xenova/all-MiniLM-L6-v2',
+};
+
+// Gated models list left for future use if you add private/gated IDs.
+const BROWSER_GATED_MODELS = new Set<string>([]);
 const gatedWarningSent = new Set<ModelKey>();
 
-env.allowLocalModels = !!localModelBase;
+// Start in CDN-only mode; callers can later enable local models by
+// invoking resolveModelBaseUrl() and updating env.localModelPath.
+env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
-if (localModelBase) {
-  env.localModelPath = `${localModelBase}/models`;
-}
+// env.localModelPath is intentionally left unset in Option A.
 if (!env.cacheDir) {
   env.cacheDir = 'indexeddb://agentlee-transformers';
 }
+
+// Reduce noisy ONNX Runtime Web logs (graph optimizer warnings)
+try {
+  const ort: any = (globalThis as any).ort;
+  if (ort?.env) {
+    ort.env.logLevel = 'error';
+  }
+} catch {}
 
 if (typeof console !== 'undefined') {
   if (env.allowLocalModels) {
@@ -119,16 +276,8 @@ export interface ModelStatusEntry {
 
 const MODEL_CONFIG: Record<ModelKey, ModelConfig> = {
   planner: {
-    label: 'SmolLM2 Planner',
-    model: [
-      'HuggingFaceTB/SmolLM2-1.7B-Instruct',
-      'HuggingFaceTB/SmolLM2-360M-Instruct',
-      'HuggingFaceTB/SmolLM2-135M-Instruct',
-      'Xenova/SmolLM2-360M-Instruct',
-      'Xenova/SmolLM-360M-Instruct',
-      'Xenova/SmolLM-135M-Instruct',
-      'Xenova/Qwen1.5-0.5B-Chat'
-    ],
+    label: 'Planner',
+    model: MODEL_REGISTRY.planner,
     task: 'text-generation',
     generation: {
       max_new_tokens: 320,
@@ -137,35 +286,38 @@ const MODEL_CONFIG: Record<ModelKey, ModelConfig> = {
     },
     pipelineOptions: {
       quantized: true,
-      dtype: 'q4',
     },
   },
   brain: {
-    label: 'Qwen Brain',
-    model: 'Xenova/Qwen1.5-0.5B-Chat',
+    label: 'Brain',
+    model: MODEL_REGISTRY.brain,
     task: 'text-generation',
     generation: {
       max_new_tokens: 420,
-      temperature: 0.58,
+      temperature: 0.55,
       top_p: 0.9,
     },
     pipelineOptions: {
       quantized: true,
-      dtype: 'q4',
     },
   },
   companion: {
-    label: 'Blenderbot Companion',
-    model: 'facebook/blenderbot-400M-distill',
-    task: 'conversational',
+    label: 'Companion',
+    model: MODEL_REGISTRY.companion,
+    task: 'text-generation',
+    generation: {
+      max_new_tokens: 120,
+      temperature: 0.5,
+      top_p: 0.9,
+    },
     pipelineOptions: {
       quantized: true,
     },
   },
   voice: {
-    label: 'LaMini Voice Styler',
-    model: 'Xenova/LaMini-Flan-T5-248M',
-    task: 'text2text-generation',
+    label: 'Voice Styler',
+    model: MODEL_REGISTRY.voice,
+    task: 'text-generation',
     generation: {
       max_new_tokens: 220,
       temperature: 0.55,
@@ -177,7 +329,7 @@ const MODEL_CONFIG: Record<ModelKey, ModelConfig> = {
   },
   librarian: {
     label: 'MiniLM Librarian',
-    model: 'Xenova/all-MiniLM-L6-v2',
+    model: MODEL_REGISTRY.librarian,
     task: 'feature-extraction',
   },
 };

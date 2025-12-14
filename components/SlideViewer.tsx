@@ -1,3 +1,38 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.COMPONENT.SLIDE.VIEWER
+REGION: 🔵 UI
+
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Slide Viewer Component",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "UI", "Presentation", "Slides"],
+  "identifier": "UI.COMPONENT.SLIDE.VIEWER",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Slide layout with narration and visualization; tab selection handling; WHY=Present story content with synchronized visuals; WHO=Leeway Industries; WHERE=/components/SlideViewer.tsx; WHEN=2025-12-09; HOW=React + ChartRouter + responsive layout
+SPDX-License-Identifier: MIT
+============================================================================ */
 
 import React from "react";
 import { DataSources, SlideDefinition } from "../types";
@@ -10,6 +45,25 @@ interface SlideViewerProps {
 }
 
 export const SlideViewer: React.FC<SlideViewerProps> = ({ slide, dataSources, isSpeaking }) => {
+  const [selectedTab, setSelectedTab] = React.useState<string>(() => (slide.tabs?.[0] || "overview"));
+
+  React.useEffect(() => {
+    setSelectedTab(slide.tabs?.[0] || "overview");
+  }, [slide.id]);
+
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      if (!detail) return;
+      if (detail.slideId && detail.slideId !== slide.id) return;
+      const next = String(detail.tabId || "");
+      if (!next) return;
+      setSelectedTab(next);
+    };
+    window.addEventListener('agentlee:selectTab', handler as EventListener);
+    return () => window.removeEventListener('agentlee:selectTab', handler as EventListener);
+  }, [slide.id]);
+
   return (
     <div 
       key={slide.id} 
@@ -58,14 +112,15 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({ slide, dataSources, is
          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-slate-950/80 rounded-2xl border border-slate-700/50 shadow-2xl overflow-auto flex flex-col backdrop-blur-sm">
             
             {/* Visual Header */}
-            <div className="h-8 bg-slate-950/50 border-b border-slate-800 flex items-center px-4 justify-end gap-2 shrink-0">
+            <div className="h-8 bg-slate-950/50 border-b border-slate-800 flex items-center px-4 justify-between gap-2 shrink-0">
+              <div className="text-[10px] lg:text-xs text-slate-300">Tab: {selectedTab}</div>
                 <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${isSpeaking ? 'bg-green-500 animate-pulse' : 'bg-slate-700'}`}></div>
                 <div className="w-2 h-2 rounded-full bg-slate-700"></div>
             </div>
 
-            {/* Chart/Content Container */}
-            <div className="flex-1 relative p-2 lg:p-6 bg-slate-900/30 overflow-auto">
-                <ChartRouter slide={slide} dataSources={dataSources} isSpeaking={isSpeaking} />
+            {/* Chart/Content Container: disable outer scroll for AcquisitionMap to avoid double scroll */}
+            <div className={`flex-1 relative p-2 lg:p-6 bg-slate-900/30 ${slide.chartKind === 'AcquisitionMap' ? 'overflow-hidden' : 'overflow-auto'}`}>
+                <ChartRouter slide={slide} dataSources={dataSources} isSpeaking={isSpeaking} selectedTab={selectedTab} />
             </div>
 
             {/* Decorative Overlay */}

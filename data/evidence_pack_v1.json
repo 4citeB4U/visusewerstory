@@ -1,0 +1,86 @@
+{
+  "entity": "Visu-Sewer",
+  "version": "evidence_pack_v1",
+  "as_of": "2025-12-07",
+  "facts": [
+    {
+      "fact_id": "VS-FOUNDING-1975",
+      "claim": "Visu-Sewer was founded in 1975 by Ernest Alexander in Pewaukee, Wisconsin.",
+      "category": ["company_history"],
+      "evidence_text": "User-provided company background summary cites founding in 1975 by Ernest Alexander in Pewaukee, WI.",
+      "source_refs": [
+        "Fort Point Capital portfolio page (per user summary)",
+        "Story background text provided by user"
+      ],
+      "confidence": "high"
+    },
+    {
+      "fact_id": "VS-TECH-EARLY",
+      "claim": "Visu-Sewer differentiated early through adoption of hydro-jet flushing and CCTV inspection.",
+      "category": ["technology", "competitive_positioning"],
+      "evidence_text": "User-provided background notes early adoption of hydro-jet and CCTV as pioneering technology.",
+      "source_refs": ["Company background text provided by user"],
+      "confidence": "medium_high"
+    },
+    {
+      "fact_id": "VS-PE-OWNERSHIP",
+      "claim": "Visu-Sewer is a portfolio company of Fort Point Capital.",
+      "category": ["ownership", "platform_strategy"],
+      "evidence_text": "User summaries of press releases and portfolio description identify Fort Point Capital as owner.",
+      "source_refs": [
+        "PR Newswire / Yahoo Finance mirror (per user summary)",
+        "Fort Point Capital portfolio page (per user summary)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "fact_id": "VS-MOR-ACQ-2025",
+      "claim": "Visu-Sewer acquired MOR Construction Services in late September/early October 2025.",
+      "category": ["acquisitions", "growth"],
+      "evidence_text": "User-provided link summaries list multiple announcements dated 2025-09-30 to 2025-10-08 confirming the acquisition.",
+      "source_refs": [
+        "PR Newswire (2025-10-01) (per user summary)",
+        "Epicos (2025-09-30) (per user summary)",
+        "Water & Wastes Digest (2025-10-07) (per user summary)",
+        "Construction Owners (2025-10-08) (per user summary)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "fact_id": "VS-MOR-EXPANSION-STATES",
+      "claim": "The MOR acquisition expands Visu-Sewer into Pennsylvania, Delaware, and New Jersey.",
+      "category": ["geographic_expansion"],
+      "evidence_text": "User summaries explicitly name PA, DE, and NJ as new states added via MOR.",
+      "source_refs": ["Press release/news coverage (per user summary)"],
+      "confidence": "high"
+    },
+    {
+      "fact_id": "VS-MOR-TERMS-UNDISCLOSED",
+      "claim": "Financial terms of the MOR acquisition were not publicly disclosed.",
+      "category": ["acquisitions", "financial_disclosure"],
+      "evidence_text": "User summaries state there is no purchase price, EBITDA, or valuation released in the announcements.",
+      "source_refs": ["All MOR acquisition articles (per user summary)"],
+      "confidence": "high"
+    },
+    {
+      "fact_id": "VS-HOV-CONTRACT-18_1",
+      "claim": "Visu-Sewer was awarded an $18.1M Heart of the Valley interceptor rehabilitation contract in 2023.",
+      "category": ["contracts", "scale_indicators"],
+      "evidence_text": "User summary cites Fox11 reporting an $18.1M municipal award.",
+      "source_refs": ["Fox11 article (2023-08-08) (per user summary)"],
+      "confidence": "medium_high"
+    },
+    {
+      "fact_id": "VS-SHERIDAN-VA-50K",
+      "claim": "A $50K VA contract record reflects pre-acquisition government services tied to Sheridan Plumbing & Sewer.",
+      "category": ["contracts", "acquisitions_context"],
+      "evidence_text": "User summary cites HigherGov record of $50K VA award dated 2022-07-29.",
+      "source_refs": ["HigherGov contract record (2022-07-29) (per user summary)"],
+      "confidence": "medium"
+    }
+  ],
+  "guardrails": [
+    "Do not infer acquisition price, revenue, or EBITDA for MOR without additional sources.",
+    "Treat contract values as project-scale indicators, not valuation proxies unless explicitly modeled as assumptions."
+  ]
+}

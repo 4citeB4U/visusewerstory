@@ -1,22 +1,60 @@
-import { answerWithEvidence, docStore } from "../Models/agentlee-local-bundle.js";
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: AI.ORCHESTRATION.ROUTER.CORE
+REGION: 🧠 AI
+
+STACK: LANG=ts; FW=none; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: agent-module
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=n/a;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Leeway Industries Core Service",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "AI", "Orchestration", "AgentLee"],
+  "identifier": "AI.ORCHESTRATION.ROUTER.CORE",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Leeway Industries core service layer; WHY=Orchestrate Agent Lee conversation and data flows; WHO=Agent Lee System; WHERE=/services/leewayIndustriesService.ts; WHEN=2025-12-09; HOW=Model orchestration + chat session + slide explanations
+SPDX-License-Identifier: MIT
+============================================================================ */
+
+import { MOCK_DATA, STORY_CONFIG } from "../constants";
+import { initDocStore } from "../Models/AgentLeeBrainMonolith";
 import { SlideDefinition, UserRole } from "../types";
 import { buildAgentLeeCorePrompt } from "./agentlee-core/AgentLeeCore";
+import { AgentLeeChartRegistry } from "./AgentLeeChartRegistry";
 import {
-    runBrainModel,
-    runCompanionModel,
-    runPlannerModel,
-    runVoiceStyler,
-    warmUpModelGroup,
-    runSingleModelAnswer,
+  runBrainModel,
+  runCompanionModel,
+  runPlannerModel,
+  runSingleModelAnswer,
+  runVoiceStyler,
+  warmUpModelGroup,
 } from "./localModelHub";
 
 /**
  * Agent response shape used throughout the app.
  */
-interface AgentResponse {
+export type AgentResponse = {
   text: string;
   navigationTarget?: string;
-}
+};
 
 const readAllowLocalNarrationPreference = (): boolean => {
   try {
@@ -56,7 +94,7 @@ export const setAllowLocalNarration = (allow: boolean) => {
 // ---------------------------------------------------------------------------
 
 const GENERIC_HELP_TEXT =
-  "I am Agent Lee. I can navigate the presentation or clarify our data. You can ask me to 'Turn to Page 8', 'Show the Map', or 'Explain the Financials'.";
+  "I’m Agent Lee. Let’s walk the story at your pace. We can stay on this slide or move when you’re ready.";
 
 /**
  * Analyze input to find the best matching scripted response.
@@ -65,9 +103,20 @@ const GENERIC_HELP_TEXT =
 const determineResponse = (query: string, slideContext?: string): AgentResponse => {
   const q = query.toLowerCase();
 
+  // Map number words to integers (1-20 for safety; we need up to 13)
+  const WORD_NUM: Record<string, number> = {
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+    eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20
+  };
+  const wordToNum = (word: string): number | null => WORD_NUM[word] ?? null;
+
   // --- 0. Direct Page Navigation (Highest Priority) ---
-  // Detects "Page 8", "Slide 5", "Turn to page 10", etc.
-  const pageMatch = q.match(/(?:page|slide)\s+(\d+)/);
+  // Detects "Turn to Page 8", "Go to Slide 5", "Navigate to page 10", "Show page 12", etc.
+  // Requires explicit navigation verbs to avoid false positives like "explain the page" or "on page 13"
+  const pageMatch = q.match(/\b(?:turn\s+to|go\s+to|navigate\s+to|show|open|display)\s+(?:page|slide)\s+(\d+)/i) ||
+                     q.match(/^(?:page|slide)\s+(\d+)$/i); // Also allow standalone "page 8" as full query
+  const pageWordMatch = q.match(/\b(?:turn\s+to|go\s+to|navigate\s+to|show|open|display)\s+(?:page|slide)\s+(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen)/i) ||
+                         q.match(/^(?:page|slide)\s+(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen)$/i);
   if (pageMatch) {
     const pageNum = parseInt(pageMatch[1], 10);
     // We do not depend on SLIDES here to avoid extra imports; App will interpret the navigationTarget.
@@ -82,18 +131,37 @@ const determineResponse = (query: string, slideContext?: string): AgentResponse 
       };
     }
   }
+  if (pageWordMatch) {
+    const wn = wordToNum(pageWordMatch[1]);
+    if (wn && wn >= 1) {
+      return {
+        text: `Certainly. Turning to Page ${wn}.`,
+        navigationTarget: wn.toString()
+      };
+    }
+  }
 
   // --- 1. Keyword Navigation Commands ---
-  if (q.includes("map") || q.includes("acquisition") || q.includes("where")) {
+  // Make patterns more restrictive with word boundaries and multiple keywords to avoid false matches
+  if ((q.includes("show") && q.includes("map")) || 
+      (q.includes("acquisition") && q.includes("map")) ||
+      /\b(show|display|open)\s+(the\s+)?acquisition/i.test(q) ||
+      /\bwhere\s+(are|is)\s+(we|the|your)\b/i.test(q)) {
     return {
       text: "Navigating to the National Platform Map. As you can see, we have expanded well beyond the Midwest into the Mid-Atlantic region with strategic hubs in Pennsylvania and New Jersey.",
       navigationTarget: "AcquisitionMap"
     };
   }
+  if (q.includes("roi") || q.includes("return on investment")) {
+    return {
+      text: "Navigating to the Evidence Locker to review ROI charts and case studies.",
+      navigationTarget: "12" // Evidence Locker
+    };
+  }
   if (q.includes("money") || q.includes("financial") || q.includes("revenue") || q.includes("ebitda")) {
     return {
       text: "Moving to the Financial Bridge. We are tracking from a $37M base towards a $70M target, driven by organic growth, tech uplift, and M&A.",
-      navigationTarget: "Engineering Tomorrow"
+      navigationTarget: "8" // Engineering Tomorrow
     };
   }
   if (q.includes("timeline") || q.includes("history") || q.includes("growth") || q.includes("years")) {
@@ -108,7 +176,11 @@ const determineResponse = (query: string, slideContext?: string): AgentResponse 
       navigationTarget: "Masters of the Main"
     };
   }
-  if (q.includes("evidence") || q.includes("source") || q.includes("verify") || q.includes("link")) {
+  if (/\bevidence\s+locker\b/i.test(q) || 
+      (q.includes("show") && q.includes("evidence")) ||
+      (q.includes("open") && q.includes("evidence")) ||
+      (q.includes("verify") && q.includes("source")) ||
+      /\b(show|open|display)\s+(the\s+)?sources?\b/i.test(q)) {
     return {
       text: "Opening the Evidence Locker. Here you can verify every claim, download case studies, and review our acquisition announcements.",
       navigationTarget: "Evidence Locker"
@@ -120,7 +192,9 @@ const determineResponse = (query: string, slideContext?: string): AgentResponse 
       navigationTarget: "The Evolution of Intelligence"
     };
   }
-  if (q.includes("close") || q.includes("end") || q.includes("thank")) {
+  if (/\b(close|end|finish|wrap up)\s+(the\s+)?(presentation|deck|slides?)\b/i.test(q) ||
+      /\b(closing|final)\s+slide\b/i.test(q) ||
+      (q.includes("thank") && (q.includes("closing") || q.includes("final")))) {
     return {
       text: "Initiating closing sequence. Thank you for your partnership. We are ready to execute.",
       navigationTarget: "The Road Ahead"
@@ -209,11 +283,26 @@ const ensureLocalModelsReady = async () => {
 };
 
 // Generate a simplified system instruction (used only as conceptual context)
-const SYSTEM_INSTRUCTION = `You are Agent Lee, an expert data analyst and strategic advisor for sewer infrastructure projects.
+const SYSTEM_INSTRUCTION = `You are Agent Lee: a pragmatic, voice-forward AI guide with a Midwestern business register.
 
-You have access to comprehensive knowledge about sewer systems, CCTV inspections, project costs, bidding processes, and construction data.
+ANTI-SCRIPT RULES
+✗ Never repeat the same opening line across conversations
+✗ No "Good evening, I am Agent Lee..." unless requested
+✗ Get to the user's goal quickly
 
-Provide clear, concise, and actionable answers based on the available data and your expertise. Focus on practical insights and recommendations.`;
+MIDWESTERN BUSINESS VOICE
+✓ "Let's take a look at what the data's telling us"
+✓ "We're in a good spot, just need to tighten a few things up"
+✓ "I'll take point on that piece"
+✓ "Let's make sure we're aligned on the outcome"
+✗ Avoid: "How can I assist?", "Processing request", robotic phrasing
+
+Speak like a dependable operations leader: warm, modest, solution-oriented, with steady progress mindset.
+Specialize in sewer infrastructure, CCTV inspections, project costs, and construction data.
+Provide clear insights grounded in evidence, using short sentences and collaborative language.
+
+You have expertise in sewer systems, CCTV inspections, project costs, and construction data.
+Provide clear insights grounded in evidence, but speak like a human who's genuinely engaged in helping explore the story.`;
 
 /**
  * Return a short knowledge snippet matching `query`.
@@ -407,6 +496,30 @@ export const sendMessageToAgentLee = async (
   message: string,
   currentSlide?: SlideDefinition
 ): Promise<AgentResponse> => {
+  // High-priority chart intent: explain chart naturally without requiring a button
+  try {
+    const m = String(message || '').toLowerCase();
+    const wantsChart = /(explain|describe|walk|talk)\s+(the\s+)?(chart|graph|visual|figure)|\b(chart|graph|figure)\b/.test(m);
+    if (wantsChart) {
+      const selectedPoint = (typeof window !== 'undefined') ? (window as any).AGENT_SELECTED_POINT || undefined : undefined;
+      const exp = await explainChartForSlide(currentSlide, { selectedPoint });
+      const highlightsText = (exp.highlights || []).map(h => `• ${h.text}`).join('\n');
+      const msgText = [exp.narrative, highlightsText].filter(Boolean).join('\n').trim();
+      if (msgText) {
+        // Trigger gentle auto-scroll on the active chart panel while explaining
+        try {
+          setTimeout(() => {
+            try { (window as any).AGENTLEE_UI?.scrollActiveChartPanel?.(); } catch {}
+          }, 600);
+        } catch {}
+        return { text: msgText };
+      }
+    }
+  } catch (chartErr) {
+    // Graceful fallback when chart explanation fails
+    const safeTitle = currentSlide?.title ? ` on "${currentSlide.title}"` : '';
+    return { text: `I couldn’t explain the chart${safeTitle} just yet. We may not have the chart context loaded. We can stay with the story or come back to charts once they’re ready.` };
+  }
   // -----------------------------------------------------------------------
   // 0. FIRST-LAYER: DETERMINISTIC ENGINE (FAST, STABLE, NAVIGATION-AWARE)
   // -----------------------------------------------------------------------
@@ -438,7 +551,20 @@ export const sendMessageToAgentLee = async (
     console.log('Evidence collected; preview:', String(evidenceResult.evidence?.localDataPreview || '').slice(0, 240));
 
     const evidenceText = (evidenceResult.evidence?.localDataPreview || '').slice(0, 2000);
+    try {
+      if (typeof window !== 'undefined') {
+        (window as any).AGENT_LAST_EVIDENCE = evidenceResult?.evidence || null;
+      }
+    } catch {}
     const chartContext = evidenceResult.evidence?.chartContext || null;
+    // Special handling for Page 11 tabbed charts: attempt to tag DOM to load chart context
+    try {
+      const pn = (currentSlide as any)?.pageNumber;
+      if (typeof window !== 'undefined' && (pn === 11 || /roi|metrics|analysis|technology/i.test(String(currentSlide?.chartKind)))) {
+        (window as any).AGENTLEE_UI?.runSlide11TabsAutomation?.();
+        await (window as any).AGENTLEE_UI?.ensureChartsRendered?.();
+      }
+    } catch {}
     const slideNarrative = buildSlideNarrativeText(currentSlide);
 
     await ensureLocalModelsReady();
@@ -467,7 +593,7 @@ export const sendMessageToAgentLee = async (
         question: message,
         slideTitle: currentSlide?.title,
         chartContext,
-        citations: evidenceResult?.evidence?.citations || [],
+        citations: (evidenceResult?.evidence?.citations as import('./localModelHub').SingleModelCitationsItem[] | undefined) || [],
         chartData: evidenceResult?.evidence?.chartData || null,
         forceChartFocus: wantsChart,
       });
@@ -539,6 +665,26 @@ export const sendMessageToAgentLee = async (
 
     narrationText = sanitizeLLMText(narrationText);
 
+    // Proactive follow-up for vague queries (tailored to slide chartKind)
+    const isVague = (msg: string) => {
+      const m = String(msg || '').toLowerCase();
+      const hasSpecifics = /\b(\d{4}|\$?\d+|year|series|component|chart|timeline|bridge|crew|cctv|cost|roi|method|region|phase)\b/.test(m);
+      return !hasSpecifics;
+    };
+    if (isVague(message)) {
+      const kind = String(currentSlide?.chartKind || '').toLowerCase();
+      // Provide a gentle, non-directive suggestion without a question
+      let suggestion = 'We can stay on this page or move to ROI, the map, or the timeline whenever you want.';
+      if (kind === 'timeline') suggestion = 'We can walk the timeline highlights and connect the dots to the story.';
+      else if (kind === 'contractorschedule' || kind === 'velocity') suggestion = 'We can step through crew capacity and regional growth at your pace.';
+      else if (kind === 'growthbridge') suggestion = 'We can cover the financial bridge components and how they stack up.';
+      else if (kind === 'cctv') suggestion = 'We can touch on inspection methods and what they mean in practice.';
+      else if (kind === 'projectcosts') suggestion = 'We can cover methods, costs, and impact in plain language.';
+      else if (kind === 'techstack') suggestion = 'We can outline speed, risk, and optimization without jargon.';
+      else if (kind === 'evidence') suggestion = 'We can open the Evidence Locker and keep it simple.';
+      narrationText = narrationText ? `${narrationText}\n\n${suggestion}` : suggestion;
+    }
+
     if (!narrationText || isGarbled(narrationText) || isAgentNameVariant(narrationText)) {
       if (isAgentNameVariant(narrationText)) {
         console.warn('[LeewayIndustriesService] Rejected final narration because it appears to contain garbled Agent Lee name variants.');
@@ -546,7 +692,8 @@ export const sendMessageToAgentLee = async (
       if (isGarbled(narrationText)) {
         console.warn('[LeewayIndustriesService] Rejected final narration because output is garbled or repetitive.');
       }
-      narrationText = "I'm sorry, I encountered an issue generating a detailed response. Please try rephrasing your question or asking about a specific slide, map, or financial view.";
+      const safeTitle = currentSlide?.title ? ` for "${currentSlide.title}"` : '';
+      narrationText = `I hit a snag generating a clean response${safeTitle}. We can stick with this slide or move to ROI, the map, or the timeline when you want.`;
     }
 
     try {
@@ -556,7 +703,9 @@ export const sendMessageToAgentLee = async (
         durationMs: Date.now() - start,
         textPreview: narrationText.slice(0, 300),
         success: true,
-        models: 'planner+brain+voice+companion'
+        models: 'planner+brain+voice+companion',
+        citations: (evidenceResult?.evidence?.citations || []).slice(0, 8),
+        matchedClaims: evidenceResult?.evidence?.matchedClaims || [],
       };
     } catch {
       /* ignore diagnostics */
@@ -605,6 +754,192 @@ export const sendMessageToAgentLee = async (
   }
 };
 
+// ---------------------------------------------------------------------------
+//  CHART EXPLANATION API (Deterministic, Structured, KB-grounded)
+// ---------------------------------------------------------------------------
+
+export type ChartExplanation = {
+  narrative: string;
+  highlights: Array<{ type: 'trend' | 'peak' | 'low' | 'inflection' | 'relation' | 'anomaly'; text: string }>;
+  point_explanation?: { x: string | number; seriesKey?: string; y: number; meaning?: string };
+  kb_used: string[];
+  confidence: 'low' | 'medium' | 'high';
+  assumptions: string[];
+};
+
+function toNumberSafe(v: any): number | null {
+  const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+export function buildChartSnapshotForSlide(currentSlide?: SlideDefinition) {
+  try {
+    const ctx = (currentSlide?.id || currentSlide?.title) ? (window as any).AgentLeeChartRegistry?.getChartContextForSlide(currentSlide?.id || currentSlide?.title) : null;
+    const data = (currentSlide?.id || currentSlide?.title) ? (window as any).AgentLeeChartRegistry?.getChartDataForSlide(currentSlide?.id || currentSlide?.title) : null;
+    return { chart_context: ctx || null, chart_data: Array.isArray(data) ? data : null };
+  } catch {
+    return { chart_context: null, chart_data: null };
+  }
+}
+
+export async function explainChartForSlide(currentSlide?: SlideDefinition, opts?: { selectedPoint?: { x: string | number; seriesKey?: string } }): Promise<ChartExplanation> {
+  const snap = buildChartSnapshotForSlide(currentSlide);
+  const ev = (window as any).AGENT_LAST_EVIDENCE || {};
+  const citations = Array.isArray(ev?.citations) ? ev.citations : [];
+  const kbIds = citations.map((c: any) => `kb_${c.id ?? c.docId ?? 'doc'}`);
+
+  // Fallback: if registry didn’t return, synthesize chart_data directly from deck config and mock data
+  if (!snap.chart_data || !snap.chart_data.length) {
+    try {
+      const cfg = (window as any).STORY_CONFIG || STORY_CONFIG;
+      const mock = (window as any).MOCK_DATA || MOCK_DATA;
+      const slideList: Array<any> = Array.isArray(cfg?.slides) ? (cfg.slides as Array<any>) : [];
+      const slide = currentSlide || (slideList.length ? slideList[0] : null);
+      const charts: any[] = [];
+      const kind = String((slide as any)?.chartKind || '').toLowerCase();
+      if (kind === 'timeline' && Array.isArray(mock?.historicalGrowth)) {
+        charts.push({
+          id: 'timeline', title: 'Historical Growth Timeline', axes: { x: 'Year', y: 'Index' },
+          series: [{ name: 'Growth', points: mock.historicalGrowth.map((h: any)=> ({ x: Number(h.year) || h.year, y: Number(h.value) || 0, label: h.milestone })) }]
+        });
+      } else if ((kind === 'contractorschedule' || kind === 'velocity') && Array.isArray(mock?.operationalVelocity)) {
+        const byRegion: Record<string, any[]> = {};
+        mock.operationalVelocity.forEach((r: any)=>{
+          const x = Number(r.year) || r.year; const y = Number(r.crewCount) || 0; (byRegion[r.region] = byRegion[r.region] || []).push({ x, y, label: r.projectsCompleted });
+        });
+        charts.push({ id: 'crewCapacity', title: 'Velocity: Crew Capacity (2020–2050)', axes: { x: 'Year', y: 'Crew Capacity', unitY: 'crews' }, series: Object.entries(byRegion).map(([name, pts])=> ({ name, points: pts.sort((a:any,b:any)=> Number(a.x)-Number(b.x)) })) });
+      } else if (kind === 'growthbridge' && Array.isArray(mock?.financials)) {
+        const map: Record<string, number> = {}; mock.financials.forEach((f:any)=> { map[String(f.category)] = Number(f.value) || 0; });
+        charts.push({ id: 'growthBridge', title: 'Financial Bridge: Path to $70M', axes: { x: 'Component', y: 'Revenue', unitY: 'USD (M)' }, series: [{ name: 'Bridge Components', points: [ { x:'Base', y: map['Base Ops']||0 }, { x:'Organic', y: map['Tech Uplift']||0 }, { x:'M&A', y: map['M&A']||0 } ] }] });
+      } else if (kind === 'cctv' && Array.isArray(mock?.cctvInspections)) {
+        const byMethod: Record<string, { total: number; count: number }> = {};
+        mock.cctvInspections.forEach((r:any)=>{ const m = String(r.method||'Unknown'); (byMethod[m] = byMethod[m] || { total:0, count:0 }); byMethod[m].total += Number(r.reviewTimeMinutes)||0; byMethod[m].count += 1; });
+        const pts = Object.entries(byMethod).map(([m, agg])=> ({ x: m, y: agg.count ? Math.round((agg.total/agg.count)*10)/10 : 0 }));
+        charts.push({ id: 'cctv', title: 'CCTV Inspection: Avg Review Time', axes: { x: 'Method', y: 'Avg Minutes', unitY: 'min' }, series: [{ name: 'Review Time', points: pts }] });
+      } else if (kind === 'aisewersviz') {
+        // Evolution Velocity: AI momentum, ROI, and workforce impact
+        const techMetrics = Array.isArray(mock?.techMetrics) ? mock.techMetrics : [];
+        const caseStudies = Array.isArray(mock?.caseStudies) ? mock.caseStudies : [];
+
+        if (techMetrics.length || caseStudies.length) {
+          const adoptionPoints = techMetrics
+            .filter((m:any)=> String(m.metric).toLowerCase() === 'speed')
+            .map((m:any)=> ({ x: m.phase || 'Phase', y: Number(m.value) || 0, label: m.label }));
+          const riskPoints = techMetrics
+            .filter((m:any)=> String(m.metric).toLowerCase() === 'risk')
+            .map((m:any)=> ({ x: m.phase || 'Phase', y: Number(m.value) || 0, label: m.label }));
+          const optimizationPoints = techMetrics
+            .filter((m:any)=> String(m.metric).toLowerCase() === 'optimization')
+            .map((m:any)=> ({ x: m.phase || 'Phase', y: Number(m.value) || 0, label: m.label }));
+
+          const roiPoints = caseStudies.map((cs:any, idx:number)=> ({
+            x: cs.study || `Case ${idx+1}`,
+            y: Number(cs.savingsPercent) || 0,
+            label: `${cs.study}: ${cs.savingsPercent}% savings`
+          }));
+
+          const series: any[] = [];
+          if (adoptionPoints.length) series.push({ name: 'AI Speed / Adoption', points: adoptionPoints });
+          if (riskPoints.length) series.push({ name: 'Risk Prediction Strength', points: riskPoints });
+          if (optimizationPoints.length) series.push({ name: 'Optimization / Budget Impact', points: optimizationPoints });
+          if (roiPoints.length) series.push({ name: 'ROI Case Studies', points: roiPoints });
+
+          if (series.length) {
+            charts.push({
+              id: 'aiSewersViz',
+              title: 'Evolution Velocity: AI + Workforce Impact',
+              axes: { x: 'Phase / Case Study', y: 'Impact / Savings', unitY: 'index / %' },
+              series,
+            });
+          }
+        }
+      }
+      snap.chart_data = charts.length ? charts : null;
+    } catch {}
+  }
+  if (!snap.chart_data || !snap.chart_data.length) {
+    return {
+      narrative: 'I have the slide context, but chart data is still loading. Tell me which part you want first, and I will summarize by year, series, and peaks.',
+      highlights: [],
+      kb_used: kbIds.slice(0,6),
+      confidence: 'low',
+      assumptions: []
+    };
+  }
+
+  const charts = snap.chart_data;
+  const highlights: ChartExplanation['highlights'] = [];
+  const narrativeParts: string[] = [];
+  let point_explanation: ChartExplanation['point_explanation'] | undefined;
+
+  charts.forEach((chart: any, idx: number) => {
+    const title = chart?.title || chart?.id || `chart ${idx+1}`;
+    const xLabel = chart?.axes?.x || 'X';
+    const yLabel = chart?.axes?.y || 'Y';
+    const yUnit = chart?.axes?.unitY ? ` ${chart.axes.unitY}` : '';
+    const series0 = Array.isArray(chart?.series) && chart.series.length ? chart.series[0] : null;
+    let peakText = '';
+    let lowText = '';
+    if (series0 && Array.isArray(series0.points) && series0.points.length) {
+      const pts = (series0.points as Array<any>).filter((p: any) => toNumberSafe(p.y) !== null);
+      const sortedByY = [...pts].sort((a,b)=> (toNumberSafe(a.y)!)-(toNumberSafe(b.y)!));
+      const low = sortedByY[0];
+      const high = sortedByY[sortedByY.length-1];
+      peakText = `Highest ${yLabel}${yUnit} occurs at ${String(high.x)} with ${toNumberSafe(high.y)!}.`;
+      lowText = `Lowest ${yLabel}${yUnit} occurs at ${String(low.x)} with ${toNumberSafe(low.y)!}.`;
+      highlights.push({ type: 'peak', text: peakText });
+      highlights.push({ type: 'low', text: lowText });
+      const first = pts[0];
+      const last = pts[pts.length-1];
+      if (toNumberSafe(last.y)! > toNumberSafe(first.y)!) {
+        highlights.push({ type: 'trend', text: `Series ${series0.name || ''} rises from ${String(first.x)} → ${String(last.x)}.` });
+      } else if (toNumberSafe(last.y)! < toNumberSafe(first.y)!) {
+        highlights.push({ type: 'trend', text: `Series ${series0.name || ''} declines from ${String(first.x)} → ${String(last.x)}.` });
+      }
+      // Selected point explanation (first chart preferred)
+      if (!point_explanation && opts?.selectedPoint) {
+        const sKey = opts.selectedPoint.seriesKey;
+        const targetSeries = sKey ? chart.series.find((s: any)=> String(s.name||'') === String(sKey)) : series0;
+        const point = targetSeries?.points.find((p: any)=> String(p.x) === String(opts.selectedPoint!.x));
+        if (point && toNumberSafe(point.y) !== null) {
+          point_explanation = { x: point.x, seriesKey: targetSeries?.name, y: toNumberSafe(point.y)! };
+        }
+      }
+    }
+    narrativeParts.push(`For “${title}”, X is ${xLabel}; Y is ${yLabel}${yUnit}. ${peakText ? peakText + ' ' : ''}${lowText ? lowText : ''}`.trim());
+  });
+
+  // Simple relation heuristic between first two charts (if present)
+  if (charts.length >= 2) {
+    const cA = charts[0];
+    const cB = charts[1];
+    const sA = Array.isArray(cA?.series) && cA.series.length ? cA.series[0] : null;
+    const sB = Array.isArray(cB?.series) && cB.series.length ? cB.series[0] : null;
+    if (sA?.points?.length && sB?.points?.length) {
+      const aPts = sA.points.filter((p: any)=> toNumberSafe(p.y) !== null);
+      const bPts = sB.points.filter((p: any)=> toNumberSafe(p.y) !== null);
+      const aTrendUp = toNumberSafe(aPts[aPts.length-1]?.y)! > toNumberSafe(aPts[0]?.y)!;
+      const bTrendUp = toNumberSafe(bPts[bPts.length-1]?.y)! > toNumberSafe(bPts[0]?.y)!;
+      if (aTrendUp && bTrendUp) {
+        highlights.push({ type: 'relation', text: `Relation: Chart 1 and Chart 2 both trend upward — A likely influences B.` });
+      } else if (!aTrendUp && !bTrendUp) {
+        highlights.push({ type: 'relation', text: `Relation: Chart 1 and Chart 2 both trend downward — common headwinds present.` });
+      }
+    }
+  }
+
+  const narrative = narrativeParts.join(' ');
+
+  return {
+    narrative: `${narrative} If you want, I can zoom into a specific year or component—what part should I explain next?`,
+    highlights,
+    point_explanation,
+    kb_used: kbIds.slice(0, 6),
+    confidence: 'medium',
+    assumptions: []
+  };
+}
+
 export const saveEvidenceForSlide = async (
   slideId: string,
   slideTitle: string,
@@ -614,7 +949,12 @@ export const saveEvidenceForSlide = async (
   try {
     const docId = `dossier::${slideId || 'slide'}::${Date.now()}`;
     const metadata = { slideId, slideTitle, createdAt: Date.now() };
-    await docStore.addDocument(docId, csvContent, metadata);
+    const store = initDocStore();
+    if (typeof (store as any).addDocument === 'function') {
+      await (store as any).addDocument(docId, csvContent, metadata);
+    } else if (typeof (store as any).add === 'function') {
+      (store as any).add(docId, csvContent, metadata);
+    }
 
     if (options?.asCsv && typeof window !== 'undefined') {
       const filename = options.filename || `${slideId || 'dossier'}-${Date.now()}.csv`;
@@ -639,6 +979,28 @@ export const saveEvidenceForSlide = async (
 if (typeof window !== 'undefined') {
   (window as any).AGENT_STATUS = AGENT_STATUS;
   (window as any).getKnowledgeSnippet = getKnowledgeSnippet;
+  // Page knowledge loader: loads chart IDs and data for the current slide
+  (window as any).AGENTLEE_KB = (window as any).AGENTLEE_KB || {};
+  (window as any).AGENTLEE_KB.loadPageKnowledge = (pageNumber?: number) => {
+    try {
+      const slides = Array.isArray(STORY_CONFIG?.slides) ? STORY_CONFIG.slides : [];
+      const idx = typeof pageNumber === 'number' ? Math.max(0, Math.min(slides.length - 1, pageNumber - 1)) : 0;
+      const slide: SlideDefinition | undefined = slides[idx];
+      if (!slide) return false;
+      const chartData = AgentLeeChartRegistry.getChartDataForSlide(slide.id || slide.title) || [];
+      const chartIds = chartData.map(c => c.id);
+      const kb = {
+        slideId: slide.id,
+        slideTitle: slide.title,
+        pageNumber: (slide as any).pageNumber ?? (idx + 1),
+        chartIds,
+        charts: chartData,
+        narration: slide.narration || null,
+      };
+      (window as any).AGENT_PAGE_KB = kb;
+      return true;
+    } catch (e) { return false; }
+  };
   try {
     const descriptor = Object.getOwnPropertyDescriptor(window, 'ALLOW_LOCAL_NARRATION');
     if (!descriptor || descriptor.configurable) {
@@ -658,4 +1020,88 @@ if (typeof window !== 'undefined') {
 
   initChatSession('Executive').catch(() => null);
 }
+
+// Evidence builder: synthesizes citations and web sources from deck constants
+const answerWithEvidence = async (
+  query: string,
+  contextMessage: string,
+  currentSlide: any
+): Promise<{
+  evidence: {
+    localDataPreview: string;
+    chartContext: any;
+    citations: import('./localModelHub').SingleModelCitationsItem[];
+    chartData: any;
+    matchedClaims: any[];
+    webSources?: Array<{ label: string; url?: string; category?: string }>;
+  };
+}> => {
+  try {
+    const slides = Array.isArray(STORY_CONFIG?.slides) ? STORY_CONFIG.slides : [];
+    const slide: any = currentSlide || (slides.length ? slides[0] : null);
+
+    // Chart context + data via registry snapshot
+    const snap = buildChartSnapshotForSlide(slide);
+
+    // Build citations from evidence items
+    const evItems = Array.isArray(MOCK_DATA?.evidenceItems) ? MOCK_DATA.evidenceItems : [] as any[];
+    const citations: import('./localModelHub').SingleModelCitationsItem[] = evItems.slice(0, 12).map((it: any, idx: number) => ({
+      id: idx + 1,
+      docId: String(it.id || it.title || `evidence_${idx + 1}`),
+      textSnippet: String(it.title || it.url || it.tag || ''),
+      score: null,
+      meta: {
+        path: it.url || null,
+        lineStart: null,
+        lineEnd: null,
+        type: String(it.type || it.tag || 'Link'),
+      },
+    }));
+
+    // Build web sources for the Sources panel (label + url + category)
+    const webSources = evItems.slice(0, 20).map((it: any) => ({
+      label: String(it.title || it.id || it.url || 'Source'),
+      url: it.url || undefined,
+      category: String(it.tag || it.type || 'Link'),
+    }));
+
+    // Create a short local preview by combining slide narration and evidence titles
+    const narration = slide?.narration;
+    const narText = Array.isArray(narration?.paragraphs) ? narration.paragraphs.join(' ') : '';
+    const titles = evItems.slice(0, 6).map((e: any) => e.title).filter(Boolean).join('; ');
+    const previewParts = [
+      slide?.title ? `Slide: ${slide.title}` : '',
+      snap.chart_context ? `Chart: ${snap.chart_context}` : '',
+      narText ? `Narration: ${narText.slice(0, 320)}` : '',
+      titles ? `Evidence: ${titles}` : '',
+    ].filter(Boolean);
+    const localDataPreview = previewParts.join('\n');
+
+    return {
+      evidence: {
+        localDataPreview,
+        chartContext: snap.chart_context,
+        citations,
+        chartData: snap.chart_data,
+        matchedClaims: [],
+        webSources,
+      },
+    };
+  } catch (e) {
+    // Graceful fallback with empty evidence
+    return {
+      evidence: {
+        localDataPreview: '',
+        chartContext: null,
+        citations: [],
+        chartData: null,
+        matchedClaims: [],
+        webSources: [],
+      },
+    };
+  }
+};
+
+// Added missing type definition for `SingleModelCitationsItem`.
+// Use SingleModelCitationsItem from localModelHub
 

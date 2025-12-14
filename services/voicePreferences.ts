@@ -1,3 +1,39 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: DATA.LOCAL.PREFS.VOICE
+REGION: 💾 DATA
+
+STACK: LANG=ts; FW=none; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=n/a;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Voice Preference Management",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "Preferences", "Voice", "TTS"],
+  "identifier": "DATA.LOCAL.PREFS.VOICE",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Voice preference management utility; WHY=Select and configure TTS voices based on user preferences; WHO=Agent Lee System; WHERE=/services/voicePreferences.ts; WHEN=2025-12-09; HOW=Voice matching algorithms + preference config
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 export interface VoiceOption {
   name: string;
   lang?: string;
@@ -11,6 +47,25 @@ interface PreferredVoiceConfig {
 }
 
 const PREFERRED_VOICE_CONFIG: PreferredVoiceConfig[] = [
+  // Prioritize natural-sounding female voices (Midwestern-friendly)
+  {
+    label: 'Microsoft Emma Online (Natural) – English (United States)',
+    searchTerms: [
+      'Microsoft Emma Online (Natural) – English (United States)',
+      'Microsoft Emma Online (Natural) - English (United States)',
+      'Microsoft Emma Online (Natural)',
+      'en-US-EmmaNeural'
+    ]
+  },
+  {
+    label: 'Microsoft Jenny Online (Natural) – English (United States)',
+    searchTerms: [
+      'Microsoft Jenny Online (Natural) – English (United States)',
+      'Microsoft Jenny Online (Natural) - English (United States)',
+      'Microsoft Jenny Online (Natural)',
+      'en-US-JennyNeural'
+    ]
+  },
   {
     label: 'Microsoft Aria Online (Natural) – English (United States)',
     searchTerms: [
@@ -20,6 +75,57 @@ const PREFERRED_VOICE_CONFIG: PreferredVoiceConfig[] = [
       'en-US-AriaNeural'
     ]
   },
+  {
+    label: 'Microsoft EmmaMultilingual Online (Natural) – English (United States)',
+    searchTerms: [
+      'Microsoft EmmaMultilingual Online (Natural) – English (United States)',
+      'Microsoft EmmaMultilingual Online (Natural) - English (United States)',
+      'Microsoft EmmaMultilingual Online (Natural)',
+      'en-US-EmmaMultilingualNeural'
+    ]
+  },
+  // Apple Enhanced (Safari/macOS) common high-quality female voices
+  {
+    label: 'Samantha (Enhanced) – English (United States)',
+    searchTerms: [
+      'Samantha (Enhanced)',
+      'Samantha',
+      'en-US-Samantha'
+    ]
+  },
+  {
+    label: 'Ava (Enhanced) – English (United States)',
+    searchTerms: [
+      'Ava (Enhanced)',
+      'Ava',
+      'en-US-Ava'
+    ]
+  },
+  {
+    label: 'Allison (Enhanced) – English (United States)',
+    searchTerms: [
+      'Allison (Enhanced)',
+      'Allison',
+      'en-US-Allison'
+    ]
+  },
+  // Google voices (Chrome) fallback; WaveNet labels may not surface via Web Speech API
+  {
+    label: 'Google US English – English (United States)',
+    searchTerms: [
+      'Google US English',
+      'Google English (United States)',
+      'en-US-google'
+    ]
+  },
+  {
+    label: 'Google en-US – English (United States)',
+    searchTerms: [
+      'en-US',
+      'English (United States)'
+    ]
+  },
+  // Male voices moved lower priority (still selectable if explicitly chosen)
   {
     label: 'Microsoft Brian Online (Natural) – English (United States)',
     searchTerms: [
@@ -39,39 +145,12 @@ const PREFERRED_VOICE_CONFIG: PreferredVoiceConfig[] = [
     ]
   },
   {
-    label: 'Microsoft Emma Online (Natural) – English (United States)',
-    searchTerms: [
-      'Microsoft Emma Online (Natural) – English (United States)',
-      'Microsoft Emma Online (Natural) - English (United States)',
-      'Microsoft Emma Online (Natural)',
-      'en-US-EmmaNeural'
-    ]
-  },
-  {
-    label: 'Microsoft EmmaMultilingual Online (Natural) – English (United States)',
-    searchTerms: [
-      'Microsoft EmmaMultilingual Online (Natural) – English (United States)',
-      'Microsoft EmmaMultilingual Online (Natural) - English (United States)',
-      'Microsoft EmmaMultilingual Online (Natural)',
-      'en-US-EmmaMultilingualNeural'
-    ]
-  },
-  {
     label: 'Microsoft Eric Online (Natural) – English (United States)',
     searchTerms: [
       'Microsoft Eric Online (Natural) – English (United States)',
       'Microsoft Eric Online (Natural) - English (United States)',
       'Microsoft Eric Online (Natural)',
       'en-US-EricNeural'
-    ]
-  },
-  {
-    label: 'Microsoft Jenny Online (Natural) – English (United States)',
-    searchTerms: [
-      'Microsoft Jenny Online (Natural) – English (United States)',
-      'Microsoft Jenny Online (Natural) - English (United States)',
-      'Microsoft Jenny Online (Natural)',
-      'en-US-JennyNeural'
     ]
   },
   // Apple Enhanced (Safari/macOS) common high-quality voices

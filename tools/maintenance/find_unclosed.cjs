@@ -1,3 +1,8 @@
+// Leeway Industries — Visu-Sewer Story
+// Module: tools/maintenance/find_unclosed.cjs
+// Purpose: Maintenance script to find unclosed tags in generated HTML
+// Date: 2025-12-07
+// Note: Internal use. Do not include confidential data in source.
 const fs = require('fs');
 
 const mainAppFilename = 'src/App.tsx';

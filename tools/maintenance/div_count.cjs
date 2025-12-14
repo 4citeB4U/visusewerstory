@@ -1,3 +1,8 @@
+// Leeway Industries — Visu-Sewer Story
+// Module: tools/maintenance/div_count.cjs
+// Purpose: Maintenance script to count divs in generated output for QA
+// Date: 2025-12-07
+// Note: Internal use. Do not include confidential data in source.
 const fs = require('fs');
 
 const targetFile = 'src/App.tsx';

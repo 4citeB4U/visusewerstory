@@ -1,6 +1,42 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: CORE.APP.ENTRY.MAIN
+REGION: 🟢 CORE
+
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Application Entry Point",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "React", "Bootstrap"],
+  "identifier": "CORE.APP.ENTRY.MAIN",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Main application entry point; WHY=Bootstrap React app with Agent Lee system; WHO=Agent Lee System; WHERE=/index.tsx; WHEN=2025-12-09; HOW=React 19 + Vite + DOM Agent Provider
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { docStore, DomAgentProvider } from './Models/agentlee-local-bundle.js';
+import { docStore, DomAgentProvider } from './Models/AgentLeeBrainMonolith';
 import { sendMessageToAgentLee } from './services/leewayIndustriesService';
 import App from './src/App';
 

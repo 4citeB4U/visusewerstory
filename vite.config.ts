@@ -1,3 +1,8 @@
+/* ============================================================================
+   Vite Build Configuration (Agent Lee Edition)
+   Combined: Advanced Build + AI Security Headers + Models/.js Support
+============================================================================ */
+
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import svgr from 'vite-plugin-svgr';
@@ -6,10 +11,9 @@ export default defineConfig(({ command, mode }) => {
   // Load env file based on `mode` in the current working directory
   const env = loadEnv(mode, process.cwd(), '');
   
-  // Base URL is '/visusewerstory/' for production, and '/' for development
-  const base = command === 'build' 
-    ? '/visusewerstory/' 
-    : '/';
+  // Base URL must match the GitHub Pages subpath in production.
+  // Use '/' in dev for local preview, and '/visusewerstory/' in build.
+  const base = command === 'build' ? '/visusewerstory/' : '/';
     
   return {
     // Base URL must match the GitHub Pages subpath
@@ -22,28 +26,37 @@ export default defineConfig(({ command, mode }) => {
 
     // Development server configuration
     server: {
-      port: 3000,
-      strictPort: true,
+      // port: Number(env.VITE_DEV_PORT ?? 3001),
+      // strictPort: true,
       open: true,
       cors: true,
+      // --- THE FIX FOR LOCAL AI MODELS ---
+      headers: {
+        "Cross-Origin-Embedder-Policy": "require-corp",
+        "Cross-Origin-Opener-Policy": "same-origin",
+      },
+    },
+
+    // Preview server configuration (for testing build locally)
+    preview: {
+      port: 4173,
+      // --- THE FIX FOR LOCAL AI MODELS ---
+      headers: {
+        "Cross-Origin-Embedder-Policy": "require-corp",
+        "Cross-Origin-Opener-Policy": "same-origin",
+      },
     },
 
     // Build configuration
     build: {
-      // Output directory for production build
-      outDir: 'docs',
-      // Clear output directory before building
+      outDir: 'dist', // Output directory (matches CI/Pages workflows)
       emptyOutDir: true,
-      // Generate sourcemaps for better debugging
       sourcemap: true,
-      // Increase chunk size warning limit (for large AI models)
-      chunkSizeWarningLimit: 2000,
+      chunkSizeWarningLimit: 2000, // Increased for AI models
       
-      // Rollup configuration for module bundling
       rollupOptions: {
-        // Custom warning handler to suppress ONNX eval warnings
+        // Suppress ONNX eval warnings
         onwarn(warning, defaultHandler) {
-          // Suppress eval warnings from onnxruntime-web
           if (
             warning.code === 'EVAL' &&
             warning.id &&
@@ -55,10 +68,9 @@ export default defineConfig(({ command, mode }) => {
           defaultHandler(warning);
         },
         
-        // Manual code splitting configuration
+        // Manual code splitting
         output: {
           manualChunks: {
-            // Split vendor code into separate chunks
             'vendor-react': ['react', 'react-dom', 'react-dom/client'],
             'vendor-transformers': ['@xenova/transformers'],
             'vendor-charts': ['recharts', 'chart.js', 'react-chartjs-2'],
@@ -70,27 +82,26 @@ export default defineConfig(({ command, mode }) => {
     // Module resolution
     resolve: {
       alias: {
-        // Path alias for src directory
         '@': '/src',
       },
     },
 
-    // Global variable definitions
+    // Global variable definitions (Polyfills for Node dependencies)
     define: {
-      // Polyfill for Node.js process.env
       'process.env': {},
-      // Global variable for browser/Node.js compatibility
       global: 'globalThis',
     },
 
     // Dependency optimization
     optimizeDeps: {
-      // Always include tslib in optimized deps
       include: ['tslib'],
       esbuildOptions: {
-        // Polyfill global and target modern browsers
         define: {
           global: 'globalThis',
+        },
+        // Ensure Models directory is also handled during dependency optimization if needed
+        loader: {
+          '.js': 'jsx',
         },
         target: 'es2020',
       },

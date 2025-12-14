@@ -1,3 +1,35 @@
+<!-- ==========================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.PUBLIC.PAGE.HOME
+REGION: 🔵 UI
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=direct;
+  INTENT_SCOPE=informational;
+  LOCATION_DEP=none;
+  VERTICALS=web;
+  RENDER_SURFACE=serp,assistant;
+  SCHEMAS=WebPage,SoftwareApplication,Organization;
+  VOICE_QA=enabled;
+  ANALYTICS=seo:*,voice:*,cta:*;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "WebPage",
+  "name": "From Pipes to Progress: A Visu-Sewer Story",
+  "about": ["LEEWAY", "VisuSewer", "DataVisualization", "AI"],
+  "identifier": "UI.PUBLIC.PAGE.HOME",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Main HTML entry point for Visu-Sewer Story app; WHY=Public homepage and app shell; WHO=Agent Lee System; WHERE=/index.html; WHEN=2025-12-09; HOW=React 19 + Vite + SEO metadata
+SPDX-License-Identifier: MIT
+========================================================================== -->
 <!doctype html>
 <html lang="en" class="dark">
   <head>

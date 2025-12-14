@@ -1,5 +1,41 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: UI.COMPONENT.MODEL.TEST
+REGION: 🔵 UI
+
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=in-app;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Model Testing UI Component",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "UI", "Testing", "AI"],
+  "identifier": "UI.COMPONENT.MODEL.TEST",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Model testing UI component; WHY=Debug and test AI model performance; WHO=Agent Lee System; WHERE=/components/ModelTestUI.tsx; WHEN=2025-12-09; HOW=React + model hub + embedder testing
+SPDX-License-Identifier: MIT
+============================================================================ */
+
 import React, { useEffect, useState } from "react";
-import { embedderLLM } from "../Models/agentlee-local-bundle.js";
+import { embedderLLM } from "../Models/AgentLeeBrainMonolith";
 import { sendMessageToAgentLee } from "../services/leewayIndustriesService";
 import { getModelStatusSnapshot, warmUpModelGroup } from "../services/localModelHub";
 
@@ -114,9 +150,13 @@ export const ModelTestUI: React.FC<ModelTestUIProps> = ({ isOpen, onClose }) => 
     
     try {
       addMessage("Generating embeddings via Transformers.js...", "system");
-      const outcome = await embedderLLM.embed("What is Visu-Sewer and what do they do?");
+      const vec = await embedderLLM.embed("What is Visu-Sewer and what do they do?");
+      if (!vec) {
+        addMessage("❌ Embeddings test returned null", "system");
+        return;
+      }
       addMessage("✅ Embeddings test successful!", "system");
-      addMessage(`Vector length: ${outcome.embedding.length}`, "system");
+      addMessage(`Vector length: ${vec.length}`, "system");
       
     } catch (error: any) {
       addMessage("❌ Embeddings test failed", "system");

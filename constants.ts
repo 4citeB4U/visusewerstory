@@ -1,12 +1,47 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: DATA.SCHEMA.STORY.CONFIG
+REGION: 💾 DATA
+
+STACK: LANG=ts; FW=none; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=n/a;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Story Configuration and Constants",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "Data", "Configuration", "Stories"],
+  "identifier": "DATA.SCHEMA.STORY.CONFIG",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Central story configuration, narration blocks, mock data, slides; WHY=Centralize content and data for presentation; WHO=Leeway Industries; WHERE=/constants.ts; WHEN=2025-12-09; HOW=TypeScript types + structured data objects
+SPDX-License-Identifier: MIT
+============================================================================ */
 import {
-  AcquisitionRecord,
-  DataSources,
-  EvidenceRecord,
-  NarrationBlock,
-  NavItem,
-  OperationalVelocityRecord,
-  SlideDefinition,
-  StoryConfig
+    AcquisitionRecord,
+    DataSources,
+    EvidenceRecord,
+    NarrationBlock,
+    NavItem,
+    OperationalVelocityRecord,
+    SlideDefinition,
+    StoryConfig
 } from "./types";
 
 // --- Evidence List ---
@@ -16,6 +51,11 @@ const EVIDENCE_LIST: EvidenceRecord[] = [
   { id: "ev_mor_acq", title: "MOR Construction Acquisition", type: "Link", url: "https://undergroundinfrastructure.com/news/2025/october/visusewer-expands-into-mid-atlantic-with-mor-construction-acquisition", date: "2025", tag: "Verified" },
   { id: "ev_sheridan", title: "Sheridan Plumbing Acquisition", type: "Link", url: "https://www.constructionowners.com/news/visusewer-expands-east-with-mor-construction-acquisition", date: "2023", tag: "Verified" },
   { id: "ev_mor_pr", title: "PR Newswire: MOR Acquisition", type: "Link", url: "https://www.prnewswire.com/news-releases/visusewer-acquires-mor-construction-302571417.html", date: "2025", tag: "Verified" },
+  { id: "ev_mor_yahoo", title: "Yahoo Finance: MOR Acquisition", type: "Link", url: "https://finance.yahoo.com/news/visusewer-acquires-mor-construction-130000382.html", date: "2025-10-01", tag: "Verified" },
+  { id: "ev_mor_epicos", title: "EPICOS: MOR Acquisition", type: "Link", url: "https://www.epicos.com/article/977158/visusewer-acquires-mor-construction", date: "2025-09-30", tag: "Verified" },
+  { id: "ev_mor_conowners", title: "Construction Owners: Expansion East", type: "Link", url: "https://www.constructionowners.com/news/visusewer-expands-east-with-mor-construction-acquisition", date: "2025-10-08", tag: "Verified" },
+  { id: "ev_mor_wwd", title: "WWD Mag: Mid-Atlantic Expansion", type: "Link", url: "https://www.wwdmag.com/wastewater-treatment/news/55322039/visusewer-expands-into-mid-atlantic-with-acquisition-of-mor-constructi", date: "2025-10-07", tag: "Verified" },
+  { id: "ev_fp_portfolio", title: "Fort Point Capital Portfolio: Visu-Sewer", type: "Link", url: "https://fortpointcapital.com/portfolio/visusewer", date: "2023-11-27", tag: "Verified" },
 
   // AI Tech & Case Studies
   { id: "ev_sewerai_prod", title: "SewerAI Productivity Study", type: "Link", url: "https://www.sewerai.com/resources-post/case-study-on-productivity-increases", date: "2024", tag: "Verified" },
@@ -30,6 +70,8 @@ const EVIDENCE_LIST: EvidenceRecord[] = [
   { id: "ev_crossbore", title: "Cross Bore Safety Audit", type: "Link", url: "https://www.sewerai.com/resources-post/cross-bore-safety-audit-case-study", date: "2023", tag: "Verified" },
   { id: "ev_internal_proj", title: "Visu-Sewer Internal 2050 Projection", type: "Data", date: "2025", tag: "Projected" },
   { id: "ev_nassco", title: "NASSCO Compliance Standards", type: "Data", date: "2024", tag: "Verified" }
+  ,{ id: "ev_hov_18m", title: "HOVMSD Interceptor Rehabilitation Award ($18.1M)", type: "Link", url: "https://fox11online.com/news/local/heart-of-the-valley-metropolitan-sewerage-district-awards-contract-for-rehabilitation-project", date: "2023-08-08", tag: "Verified" }
+  ,{ id: "ev_va_50k", title: "VA Contract Record ($50K) — Sheridan Plumbing & Sewer", type: "Link", url: "https://www.highergov.com/contract/36C25222P0994/", date: "2022-07-29", tag: "Verified" }
 ];
 
 // --- Canonical 14-Page Narration Blocks ---
@@ -37,7 +79,7 @@ const NARRATION_innovationBelowGround: NarrationBlock = {
   title: "Innovation Below Ground",
   subtitle: "Title / Setup",
   paragraphs: [
-    "Good [morning/afternoon]. I'm Agent Lee, your narrator for this Visu-Sewer story. Over the next few minutes, I'll walk you through who Visu-Sewer is, how the company grew, how AI and data are changing the work, and why the numbers behind this platform matter.",
+    "Good [morning or afternoon]. I'm Agent Lee, your narrator for this Visu-Sewer story. Over the next few minutes, I'll walk you through who Visu-Sewer is, how the company grew, how AI and data are changing the work, and why the numbers behind this platform matter.",
     "On this opening page, you're seeing the title of the story and the core idea: progress that starts below ground but shows up in safer streets, fewer failures, and better use of public dollars. As we move forward, I'll keep pointing out what the charts and visuals on the right are showing, in simple terms.",
     "One small request before we get rolling: please hold live questions until the end. If something important pops into your mind, just make a note of the page number or topic. We'll come back to it during the closing and Q&A."
   ],
@@ -195,6 +237,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_innovationBelowGround.subtitle,
     narration: NARRATION_innovationBelowGround,
     chartKind: "Covenant",
+    tabs: ["overview", "chart", "image", "evidence"],
     agentLeePromptHint: "Set the stage, explain the story structure, and note the ground rules for Q&A."
   },
   {
@@ -204,6 +247,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_stewardsOfSewers.subtitle,
     narration: NARRATION_stewardsOfSewers,
     chartKind: "AcquisitionMap",
+    tabs: ["overview", "chart", "image_map", "evidence"],
     agentLeePromptHint: "Describe who Visu-Sewer is and walk through the footprint map of active markets."
   },
   {
@@ -213,6 +257,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_throughTheTunnels.subtitle,
     narration: NARRATION_throughTheTunnels,
     chartKind: "Timeline",
+    tabs: ["overview", "chart", "image_timeline", "evidence"],
     agentLeePromptHint: "Narrate the historical growth curve and call out the inflection points."
   },
   {
@@ -222,6 +267,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_eyeOnUnderground.subtitle,
     narration: NARRATION_eyeOnUnderground,
     chartKind: "CCTV",
+    tabs: ["overview", "chart", "image_cctv", "evidence"],
     agentLeePromptHint: "Contrast manual CCTV review with AI-assisted inspection and highlight the gains."
   },
   {
@@ -231,6 +277,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_savingCities.subtitle,
     narration: NARRATION_savingCities,
     chartKind: "ProjectCosts",
+    tabs: ["overview", "chart", "image_project", "evidence"],
     agentLeePromptHint: "Explain the trenchless versus dig-and-replace comparison for cost and disruption."
   },
   {
@@ -240,6 +287,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_mastersOfMain.subtitle,
     narration: NARRATION_mastersOfMain,
     chartKind: "ContractorSchedule",
+    tabs: ["overview", "chart", "image_crews", "evidence"],
     agentLeePromptHint: "Describe capacity growth in the Midwest and Mid-Atlantic and why it matters."
   },
   {
@@ -249,6 +297,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_wiredForFuture.subtitle,
     narration: NARRATION_wiredForFuture,
     chartKind: "TechStack",
+    tabs: ["overview", "chart", "image_tech", "evidence"],
     agentLeePromptHint: "Walk through the technology roadmap with its speed, risk, and optimization metrics."
   },
   {
@@ -258,6 +307,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_engineeringTomorrow.subtitle,
     narration: NARRATION_engineeringTomorrow,
     chartKind: "GrowthBridge",
+    tabs: ["overview", "chart", "image_finance", "evidence"],
     agentLeePromptHint: "Connect field execution and the AI roadmap to the revenue bridge."
   },
   {
@@ -267,6 +317,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_visionariesBelow.subtitle,
     narration: NARRATION_visionariesBelow,
     chartKind: "Ecosystem",
+    tabs: ["overview", "image_orgChart", "image_orgChart_alt", "evidence"],
     agentLeePromptHint: "Introduce the leadership team and emphasize their field-first credibility."
   },
   {
@@ -276,6 +327,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_cleanStarts.subtitle,
     narration: NARRATION_cleanStarts,
     chartKind: "Evolution",
+    tabs: ["overview", "chart", "image_regions", "evidence"],
     agentLeePromptHint: "Explain how new regions plug into a common playbook for predictable outcomes."
   },
   {
@@ -285,6 +337,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_evolutionVelocity.subtitle,
     narration: NARRATION_evolutionVelocity,
     chartKind: "AISewersViz",
+    tabs: ["overview", "chart", "image_landscape", "evidence"],
     agentLeePromptHint: "Position Visu-Sewer within the broader AI momentum across the industry."
   },
   {
@@ -294,6 +347,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_evidenceLocker.subtitle,
     narration: NARRATION_evidenceLocker,
     chartKind: "Evidence",
+    tabs: ["overview", "chart", "image_docs", "evidence"],
     agentLeePromptHint: "Present the comprehensive evidence locker with case studies, third-party sources, and detailed charts showing cost savings, ROI timelines, and operational improvements."
   },
   {
@@ -303,6 +357,7 @@ export const SLIDES: SlideDefinition[] = [
     subtitle: NARRATION_closingChapter.subtitle,
     narration: NARRATION_closingChapter,
     chartKind: "Closing",
+    tabs: ["overview", "image_end", "evidence"],
     agentLeePromptHint: "Wrap the story, open Q&A, and invite page-jump requests."
   }
 ];

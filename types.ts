@@ -1,3 +1,38 @@
+/* ============================================================================
+LEEWAY HEADER — DO NOT REMOVE
+PROFILE: LEEWAY-ORDER
+TAG: DATA.SCHEMA.TYPES.CORE
+REGION: 💾 DATA
+
+STACK: LANG=ts; FW=none; UI=none; BUILD=node
+RUNTIME: browser
+TARGET: web-app
+
+DISCOVERY_PIPELINE:
+  MODEL=Voice>Intent>Location>Vertical>Ranking>Render;
+  ROLE=support;
+  INTENT_SCOPE=n/a;
+  LOCATION_DEP=none;
+  VERTICALS=n/a;
+  RENDER_SURFACE=n/a;
+  SPEC_REF=LEEWAY.v12.DiscoveryArchitecture
+
+LEEWAY-LD:
+{
+  "@context": ["https://schema.org", {"leeway":"https://leeway.dev/ns#"}],
+  "@type": "SoftwareSourceCode",
+  "name": "Shared TypeScript Type Definitions",
+  "programmingLanguage": "TypeScript",
+  "runtimePlatform": "browser",
+  "about": ["LEEWAY", "TypeScript", "Types", "Schema"],
+  "identifier": "DATA.SCHEMA.TYPES.CORE",
+  "license": "MIT",
+  "dateModified": "2025-12-09"
+}
+
+5WH: WHAT=Shared TypeScript types for slides, charts, data sources, and UI; WHY=Type safety and consistency across application; WHO=Leeway Industries; WHERE=/types.ts; WHEN=2025-12-09; HOW=TypeScript interface and type declarations
+SPDX-License-Identifier: MIT
+============================================================================ */
 
 import React from 'react';
 
@@ -54,6 +89,7 @@ export interface SlideDefinition {
   dataKey?: string;
   agentLeePromptHint?: string;
   visualNotes?: string[];
+  tabs?: string[]; // internal tab IDs for sections within the slide
 }
 
 export interface NavItem {

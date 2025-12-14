@@ -1,3 +1,8 @@
+// Leeway Industries — Visu-Sewer Story
+// Module: tools/serve_docs.js
+// Purpose: Local docs server helper (ESM) for previewing built site
+// Date: 2025-12-07
+// Note: Internal use. Do not include confidential data in source.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
