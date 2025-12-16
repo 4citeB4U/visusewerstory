@@ -24,18 +24,46 @@ LEEWAY-LD:
   "about": ["LEEWAY", "VisuSewer", "DataVisualization", "AI"],
   "identifier": "UI.PUBLIC.PAGE.HOME",
   "license": "MIT",
-  "dateModified": "2025-12-09"
+  "dateModified": "2025-12-16"
 }
 
-5WH: WHAT=Main HTML entry point for Visu-Sewer Story app; WHY=Public homepage and app shell; WHO=Agent Lee System; WHERE=/index.html; WHEN=2025-12-09; HOW=React 19 + Vite + SEO metadata
+5WH: WHAT=Main HTML entry point for Visu-Sewer Story app; WHY=Public homepage and app shell; WHO=Agent Lee System; WHERE=/index.html; WHEN=2025-12-16; HOW=React 19 + Vite + SEO metadata
 SPDX-License-Identifier: MIT
 ========================================================================== -->
 <!doctype html>
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <title>From Pipes to Progress: A Visu-Sewer Story</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Viewport tweak: user-scalable=no makes it feel more like a native app on iPhone -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
+    <!-- ==========================================================================
+       LINK PREVIEW TAGS (THE FIX FOR IPHONE/IMESSAGE)
+       These tags tell Apple Messages and Social Apps how to display the link.
+       ========================================================================== -->
+    <title>Visu-Sewer Financial Intelligence</title>
+    <meta name="description" content="Interactive evidence-based financial intelligence platform. Agent Lee analysis of $19.8M Revenue, HOVMSD Contract, and 2030 Projections." />
+
+    <!-- Open Graph / iMessage / LinkedIn / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://4citeb4u.github.io/visusewerstory/" />
+    <meta property="og:title" content="Visu-Sewer Growth Story" />
+    <meta property="og:description" content="Evidence-Backed Analysis: 20.6% CAGR, $18.1M HOVMSD Contract, and AI-Driven Margins." />
+    <!-- IMPORTANT: Ensure 'preview-image.jpg' exists in your public folder -->
+    <meta property="og:image" content="https://4citeb4u.github.io/visusewerstory/preview-image.jpg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://4citeb4u.github.io/visusewerstory/" />
+    <meta name="twitter:title" content="Visu-Sewer Financial Intelligence" />
+    <meta name="twitter:description" content="Interactive financial deck with verifiable source data and AI analysis." />
+    <meta name="twitter:image" content="https://4citeb4u.github.io/visusewerstory/preview-image.jpg" />
+
+    <!-- Apple Specific Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Visu-Sewer AI" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -48,24 +76,20 @@ SPDX-License-Identifier: MIT
     <style>
       body {
         font-family: "Inter", sans-serif;
+        background-color: #020617; /* matches bg-slate-950 to prevent white flash */
       }
       pre,
       code {
         font-family: "JetBrains Mono", monospace;
       }
     </style>
-
-    <!-- App CSS is imported from `src/main.tsx` -->
   </head>
 
   <body class="bg-slate-950 text-white overflow-hidden">
     <!-- React mount point -->
     <div id="root"></div>
 
-    <!-- Optional runtime config (safe if it 404s) -->
-    <script async src="/config.js"></script>
-
-    <!-- Vite entry: this bootstraps React and your App.tsx -->
+    <!-- Vite entry -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
