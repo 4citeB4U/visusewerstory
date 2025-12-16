@@ -4,7 +4,7 @@ PROFILE: LEEWAY-ORDER
 TAG: CORE.BOOT.SEQUENCE.INIT
 REGION: 🟢 CORE
 
-STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=node
+STACK: LANG=tsx; FW=react; UI=tailwind; BUILD=vite
 RUNTIME: browser
 TARGET: web-app
 
@@ -24,18 +24,19 @@ LEEWAY-LD:
   "name": "Application Boot Sequence",
   "programmingLanguage": "TypeScript",
   "runtimePlatform": "browser",
-  "about": ["LEEWAY", "Bootstrap", "Initialization"],
+  "about": ["LEEWAY", "Bootstrap", "Initialization", "Routing"],
   "identifier": "CORE.BOOT.SEQUENCE.INIT",
   "license": "MIT",
-  "dateModified": "2025-12-09"
+  "dateModified": "2025-12-16"
 }
 
-5WH: WHAT=Application main entry point; WHY=Initialize and mount React app; WHO=Agent Lee System; WHERE=/src/main.tsx; WHEN=2025-12-09; HOW=React 19 + DOM mounting + Doc store initialization
+5WH: WHAT=Application main entry point; WHY=Initialize React, Router, and Agent Brain; WHO=Agent Lee System; WHERE=/src/main.tsx; WHEN=2025-12-16; HOW=React 19 + HashRouter + Doc store initialization
 SPDX-License-Identifier: MIT
 ============================================================================ */
 
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { HashRouter } from "react-router-dom"; // Fix for GitHub Pages & Office Networks
 import "../index.css";
 import { docStore, DomAgentProvider, initDocStore } from "../Models/AgentLeeBrainMonolith";
 import { sendMessageToAgentLee } from "../services/leewayIndustriesService";
@@ -50,10 +51,20 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <DomAgentProvider>
-      <App />
+      {/* 
+         HashRouter is critical here. 
+         It ensures the app works on GitHub Pages and prevents 
+         "White Screen" errors on corporate networks/iPhones 
+         by using the #/ hash fragment for routing.
+      */}
+      <HashRouter>
+        <App />
+      </HashRouter>
     </DomAgentProvider>
   </React.StrictMode>
 );
+
+// --- AGENT LEE BOOTSTRAPPING & DIAGNOSTICS BELOW ---
 
 const scheduleBootstrapRag = () => {
   if (typeof window === "undefined") return;
@@ -82,6 +93,7 @@ const scheduleBootstrapRag = () => {
 const installDiagnostics = () => {
   if (typeof window === "undefined") return;
 
+  // 1. Install Probe for debugging
   try {
     window.probeAgent = async (msg = "Are you online?") => {
       try {
@@ -95,6 +107,7 @@ const installDiagnostics = () => {
     // ignore diagnostics hook failure
   }
 
+  // 2. Install Image Fallback Handler
   try {
     const placeholder = `data:image/svg+xml;utf8,${encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240"><rect width="100%" height="100%" fill="#0f172a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#94a3b8" font-family="Arial,Helvetica,sans-serif" font-size="18">Image Not Found</text></svg>'
