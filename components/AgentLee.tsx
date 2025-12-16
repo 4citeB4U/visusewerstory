@@ -96,7 +96,6 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
   const [isThinking, setIsThinking] = useState(false);
   const [agentStatus, setAgentStatus] = useState(AGENT_STATUS);
   const [showDiag, setShowDiag] = useState(false);
-  const [showSources, setShowSources] = useState(false);
   const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const latestSlideRef = useRef<SlideDefinition | null>(currentSlide);
@@ -445,6 +444,34 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
         return true;
       } catch { return false; }
     };
+
+    // Expose an open hook and external question handler so other components/pages can route Q&A to Agent Lee
+    ui.open = () => { try { setIsOpen(true); } catch {} };
+
+    const externalQuestionHandler = async (ev: any) => {
+      try {
+        const q = ev?.detail?.question;
+        if (!q || !q.trim()) return;
+        // Inject a user message and ask via local hub
+        const userMsg: Message = { id: Date.now(), sender: 'user', text: q };
+        setMessages(prev => [...prev, userMsg]);
+        setIsThinking(true);
+        const slideForAnswer = latestSlideRef.current || currentSlide;
+        const agentResponse = await sendMessageToAgentLee(q, slideForAnswer as any);
+        const assistantTextLocal = agentResponse?.text || '(No answer returned)';
+        const agentMsg: Message = { id: Date.now() + 1, sender: 'agent', text: assistantTextLocal, isStreaming: false };
+        setMessages(prev => [...prev, agentMsg]);
+        try { safeSpeak(assistantTextLocal); } catch {}
+        setIsThinking(false);
+      } catch (e) { setIsThinking(false); }
+    };
+
+    const openHandler = () => { try { setIsOpen(true); } catch {} };
+    // store handlers on window so cleanup can remove them reliably
+    (window as any).__AGENTLEE_EXTERNAL_Q_HANDLER = externalQuestionHandler;
+    (window as any).__AGENTLEE_OPEN_HANDLER = openHandler;
+    window.addEventListener('agentlee:externalQuestion', externalQuestionHandler as EventListener);
+    window.addEventListener('agentlee:open', openHandler as EventListener);
   }, []);
 
   // When Agent Lee box opens, create contextual greeting and speak it
@@ -471,6 +498,18 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
       }, 120);
     }
   }, [isOpen, currentSlide, messages.length, playDuringTyping]);
+
+    // cleanup external listeners on unmount
+    useEffect(() => {
+      return () => {
+        const h1 = (window as any).__AGENTLEE_EXTERNAL_Q_HANDLER;
+        const h2 = (window as any).__AGENTLEE_OPEN_HANDLER;
+        if (h1) window.removeEventListener('agentlee:externalQuestion', h1 as EventListener);
+        if (h2) window.removeEventListener('agentlee:open', h2 as EventListener);
+        try { delete (window as any).__AGENTLEE_EXTERNAL_Q_HANDLER; } catch {}
+        try { delete (window as any).__AGENTLEE_OPEN_HANDLER; } catch {}
+      };
+    }, []);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -667,7 +706,7 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
           </div>
         </div>
           <div className="flex items-center gap-2">
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowSources(s => !s); }} className="text-green-400 hover:text-white transition-colors text-xs border border-green-700 px-2 py-1 rounded" title="Show Sources">Sources</button>
+            {/* Sources button removed per UX cleanup */}
             {/* Explain Chart button removed; chart explanation handled via natural chat intents */}
             <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(false); }} className="text-green-400 hover:text-white transition-colors text-xl font-bold" title="Close Agent Lee"><PauseCircleIcon className="w-5 h-5" /></button>
           </div>
@@ -696,62 +735,7 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Sources / Citations Panel */}
-      {showSources && (
-        <div className="max-h-40 overflow-y-auto border-t border-green-900/40 bg-black/50 p-3 text-xs text-green-200">
-          {(() => {
-            const ev: any = (window as any).AGENT_LAST_EVIDENCE || {};
-            const citations = Array.isArray(ev?.citations) ? ev.citations : [];
-            const claims = Array.isArray(ev?.matchedClaims) ? ev.matchedClaims : [];
-            const web = Array.isArray(ev?.webSources) ? ev.webSources : [];
-            return (
-              <div className="space-y-2">
-                {citations.length > 0 && (
-                  <div>
-                    <div className="font-semibold text-green-300 mb-1">Citations</div>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {citations.slice(0,8).map((c: any, i: number) => (
-                        <li key={i} className="break-words">
-                          <span className="text-green-400">[{c.id ?? i+1}]</span> {c.docId || 'doc'}{typeof c.score === 'number' ? ` (score ${c.score.toFixed?.(3) ?? c.score})` : ''}
-                          {c.textSnippet ? `: ${String(c.textSnippet).slice(0, 160)}…` : ''}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {claims.length > 0 && (
-                  <div>
-                    <div className="font-semibold text-green-300 mb-1">Matched Claims</div>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {claims.slice(0,6).map((cl: any, i: number) => (
-                        <li key={i} className="break-words">
-                          <span className="text-green-400">p{cl.pageNumber ?? '?'}:</span> {cl.claim}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {web.length > 0 && (
-                  <div>
-                    <div className="font-semibold text-green-300 mb-1">Web Sources</div>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {web.slice(0,5).map((w: any, i: number) => (
-                        <li key={i} className="break-words">
-                          <a className="underline hover:text-white" href={w.url} target="_blank" rel="noreferrer">{w.label || w.url}</a>
-                          {w.category ? ` — ${w.category}` : ''}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {(!citations.length && !claims.length && !web.length) && (
-                  <div className="text-slate-400">No sources linked yet. Ask a question about a specific slide or chart.</div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
+      {/* Sources panel removed per UX cleanup */}
 
       {/* Fixed Input Area */}
       <div className="p-3 bg-slate-950 border-t border-green-900/50 shrink-0">
@@ -786,56 +770,6 @@ export const AgentLee: React.FC<AgentLeeProps> = ({ role, currentSlide, isSpeaki
         </div>
       )}
 
-      {/* Add button IDs and chart-specific responses for page 11 */}
-      <div className="p-3 bg-slate-900 border-t border-green-900/50 shrink-0">
-        <div className="flex flex-col gap-2">
-          <span className="text-xs text-green-500 uppercase font-mono">Page 11 Quick Actions</span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              id="CA11"
-              onClick={() => handlePage11ButtonClick(`Cost Reduction Comparison\nAfter AI\nBefore AI\n...`)}
-              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
-            >
-              Cost Analysis
-            </button>
-            <button
-              id="PM11"
-              onClick={() => handlePage11ButtonClick(`Processing Speed Comparison\n0\n3\n6\n...`)}
-              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
-            >
-              Performance Metrics
-            </button>
-            <button
-              id="WI11"
-              onClick={() => handlePage11ButtonClick(`Workforce Transformation Metrics\nSkill Obsolescence\n...`)}
-              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
-            >
-              Workforce Impact
-            </button>
-            <button
-              id="RS11"
-              onClick={() => handlePage11ButtonClick(`ROI Timeline Across Case Studies\nPayback Period\n...`)}
-              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
-            >
-              ROI and Savings
-            </button>
-            <button
-              id="TC11"
-              onClick={() => handlePage11ButtonClick(`Technology Platform Comparison\nGraniteNet\nPipeSleuth\n...`)}
-              className="flex-1 bg-green-800 hover:bg-green-700 text-white rounded px-3 py-2 text-sm font-bold transition-colors shadow"
-            >
-              Technology Comparison
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
-  
-  // Define the handlePage11ButtonClick function within the AgentLee component
-  function handlePage11ButtonClick(response: string) {
-    console.log(`[AgentLee] Button clicked: ${response}`);
-    // Trigger Agent Lee to speak the response
-    ttsService.speakQueuedAsync(response);
-  }
 };

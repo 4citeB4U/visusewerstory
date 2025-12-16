@@ -210,7 +210,7 @@ export const AcquisitionsMap: React.FC<{ data?: AcquisitionRecord[] }> = ({ data
                         <div className="flex-1 w-full flex flex-col gap-4 overflow-y-auto max-h-[800px]" data-agentlee-scroll="acquisitions">
                                 <div className="flex-1 w-full flex items-stretch">
                                         <ImageCard
-                                                src={`${import.meta.env.BASE_URL}images/geographic-footprint.png`}
+                                            src={`images/geographic-footprint.png`}
                                                 alt="Geographic Footprint"
                                                 fit="contain"
                                                 containerClass="bg-slate-800/20"
@@ -239,7 +239,7 @@ export const CctvChart: React.FC<{ data: CctvInspectionRecord[], isSpeaking?: bo
                 {/* Top: Organizational chart image filling edges */}
                 <div className="row-span-1 relative rounded-md overflow-hidden border border-slate-800 bg-slate-900">
                     <img
-                        src={`${import.meta.env.BASE_URL}images/orgchart.png`}
+                        src={`images/orgchart.png`}
                         alt="Organizational Chart"
                         className="absolute inset-0 w-full h-full object-cover object-center"
                     />
@@ -309,7 +309,7 @@ export const ProjectCostsChart: React.FC<{ data: ProjectCostRecord[], isSpeaking
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 onClick={(state: any) => {
                     const ap = Array.isArray(state?.activePayload) ? state.activePayload[0] : null;
-                    const x = ap?.payload?.method ?? null;
+                    const x = ap?.payload?.projectId ?? null;
                     const y = ap?.payload?.actualAmount ?? ap?.value ?? null;
                     if (x != null) (window as any).AGENT_SELECTED_POINT = { x, seriesKey: 'Actual Cost ($)' };
                 }}
@@ -326,7 +326,7 @@ export const ProjectCostsChart: React.FC<{ data: ProjectCostRecord[], isSpeaking
                 </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-            <XAxis dataKey="method" stroke="#94a3b8" tick={{fontSize: 10}} />
+            <XAxis dataKey="projectId" stroke="#94a3b8" tick={{fontSize: 10}} />
             <YAxis yAxisId="left" orientation="left" stroke="#94a3b8" width={50} tick={{fontSize: 10}} label={{ value: 'Cost ($)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }} />
             <YAxis yAxisId="right" orientation="right" stroke="#B22234" width={40} tick={{fontSize: 10}} label={{ value: 'Days', angle: 90, position: 'insideRight', fill: '#B22234', fontSize: 10 }} />
             <Tooltip content={<EvidenceTooltip />} />
@@ -517,8 +517,8 @@ export const TechStackVisual: React.FC<{ data: TechMetricRecord[], isSpeaking?: 
             </div>
 
             {/* Insert field technician image under the three charts, occupying half the box */}
-            <div className="mt-4 w-full h-1/2 flex items-center justify-center">
-                <img src={`${import.meta.env.BASE_URL}images/feild-technician-first-guy.png`} alt="Field Technician" className="w-full h-full object-cover rounded-md shadow-lg" />
+                <div className="mt-4 w-full h-1/2 flex items-center justify-center">
+                <img src={`images/feild-technician-first-guy.png`} alt="Field Technician" className="w-full h-full object-cover rounded-md shadow-lg" />
             </div>
         </div>
     );
@@ -556,7 +556,7 @@ export const EcosystemVisual: React.FC<{ data: EcosystemRecord[] }> = ({ data })
             <div className="flex flex-col md:flex-row gap-6 flex-1">
                     <div className="w-full md:w-[70%] flex items-center justify-center bg-slate-950/40 rounded-lg border border-slate-700/60 p-4 h-full">
                     <img
-                        src={`${import.meta.env.BASE_URL}images/visu-sewer-people-matter.png`}
+                        src={`images/visu-sewer-people-matter.png`}
                         alt="People Matter"
                             className="w-full h-full object-contain rounded-md shadow-lg"
                     />
@@ -610,7 +610,7 @@ export const EvolutionVisual: React.FC = () => {
              {!revealed ? (
                  <div className="absolute inset-0 flex items-center justify-center flex-col gap-6">
                      {/* Full-bleed background image behind the header and button */}
-                     <img src={`${import.meta.env.BASE_URL}images/finished-tunnel.png`} alt="Finished Tunnel" className="absolute inset-0 w-full h-full object-cover opacity-70" />
+                     <img src={`images/finished-tunnel.png`} alt="Finished Tunnel" className="absolute inset-0 w-full h-full object-cover opacity-70" />
 
                      {/* Dark overlay to keep text readable */}
                      <div className="absolute inset-0 bg-slate-950/50" />
@@ -739,7 +739,7 @@ export const ClosingVisual: React.FC = () => {
            <div className="relative z-10 mb-8 animate-[bounce_2s_infinite]">
                <div className="w-32 h-32 mx-auto bg-slate-800 rounded-full border-4 border-blue-500 flex items-center justify-center shadow-[0_0_60px_rgba(60,59,110,0.8)] relative overflow-hidden">
                    <div className="absolute inset-0 rounded-full border border-white opacity-20 animate-ping"></div>
-                   <img src={`${import.meta.env.BASE_URL}images/visu-sewer-logo-button.png`} alt="Visu Sewer Logo" className="w-full h-full object-cover rounded-full" />
+                   <img src={`images/visu-sewer-logo-button.png`} alt="Visu Sewer Logo" className="w-full h-full object-cover rounded-full" />
                </div>
            </div>
 
@@ -751,7 +751,7 @@ export const ClosingVisual: React.FC = () => {
         {/* Truck image spanning full width under the paragraph */}
         {/* Full-bleed truck image: remove horizontal padding so image spans left->right */}
         <div className="w-full -mx-8 mb-4">
-            <img src={`${import.meta.env.BASE_URL}images/visu-sewer-truck.png`} alt="Visu Sewer Truck" className="w-full max-h-[12rem] md:max-h-[20rem] object-contain shadow-lg" />
+            <img src={`images/visu-sewer-truck.png`} alt="Visu Sewer Truck" className="w-full max-h-[12rem] md:max-h-[20rem] object-contain shadow-lg" />
         </div>
          <style>{`
             @keyframes fall {
@@ -773,7 +773,7 @@ export const CovenantVisual: React.FC = () => (
         </div>
 
         <div className="relative h-full w-full flex items-center justify-center">
-            <img src={`${import.meta.env.BASE_URL}images/titlepage.png`} alt="Title Page" className="w-full h-full object-contain block" />
+            <img src={`images/titlepage.png`} alt="Title Page" className="w-full h-full object-contain block" />
         </div>
     </div>
 );

@@ -613,9 +613,9 @@ export default function App() {
 					<button
 						onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))}
 						aria-label="Previous slide"
-						className="w-12 h-12 p-0 bg-transparent rounded overflow-hidden flex items-center justify-center"
+						className="w-12 h-12 p-0 bg-transparent rounded overflow-visible flex items-center justify-center relative z-50"
 					>
-						<img src={`${import.meta.env.BASE_URL}images/previous-button.png`} alt="Previous" className="w-full h-full object-cover block" />
+						<img src={`images/previous-button.png`} alt="Previous" className="w-full h-full object-cover block" />
 					</button>
 
 					<span className="px-4">{activeIndex + 1} / {slides.length}</span>
@@ -623,9 +623,9 @@ export default function App() {
 					<button
 						onClick={() => setActiveIndex(Math.min(slides.length - 1, activeIndex + 1))}
 						aria-label="Next slide"
-						className="w-12 h-12 p-0 bg-transparent rounded overflow-hidden flex items-center justify-center"
+						className="w-12 h-12 p-0 bg-transparent rounded overflow-visible flex items-center justify-center relative z-50"
 					>
-						<img src={`${import.meta.env.BASE_URL}images/next-button.png`} alt="Next" className="w-full h-full object-cover block" />
+						<img src={`images/next-button.png`} alt="Next" className="w-full h-full object-cover block" />
 					</button>
 				</div>
 
@@ -743,5 +743,4 @@ export default function App() {
 		</div>
 	);
 }
-
 

@@ -51,6 +51,8 @@ export type SlideId =
   | "cleanStarts"
   | "evolutionVelocity"
   | "evidenceLocker"
+  | "agentLeeSpeech"
+  | "aiQAPage"
   | "appendixCharts1"
   | "closingChapter";
 
@@ -77,7 +79,9 @@ export type ChartKind =
   | "Evidence"
   | "Dossier"
   | "Closing"
-  | "AISewersViz";
+  | "AISewersViz"
+  | "Page13Speech"
+  | "AIQA";
 
 export interface SlideDefinition {
   id: SlideId;

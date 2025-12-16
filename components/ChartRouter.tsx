@@ -53,6 +53,8 @@ import {
     TechStackVisual,
     TimelineVisual
 } from "./Charts";
+import Page13Speech from "./Page13Speech";
+import Page15AIQA from "./Page15AIQA";
 
 interface ChartRouterProps {
   slide: SlideDefinition;
@@ -90,6 +92,10 @@ export const ChartRouter: React.FC<ChartRouterProps> = ({ slide, dataSources, is
         return <EvidenceVisual data={dataSources.evidenceItems} caseStudies={dataSources.caseStudies} />;
     case "AISewersViz":
       return <AISewersDataViz />;
+    case "Page13Speech":
+      return <Page13Speech />;
+    case "AIQA":
+      return <Page15AIQA />;
     case "Dossier":
         return <DossierVisual />;
     case "Closing":

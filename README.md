@@ -1,9 +1,8 @@
-LEEWAY Inovation by LEEWAY Industries
+# LEEWAY Innovation by LEEWAY Industries — v18
 
-# Build to serve 
+# Build to serve
 
-
-This contains everything you need to run your app locally.
+This repository contains everything you need to run the app locally. Below is a short changelog for v18 and the usual developer/run instructions.
 ## Run Locally
 
 **Prerequisites:**  Node.js
@@ -78,6 +77,18 @@ Agent Lee orchestrates narration, chart explanations, and page navigation. The a
    - Preferred voices are auto-selected (see `services/voicePreferences.ts`), and rate/pitch are adjustable in-app.
 
 When asked about the model Agent Lee uses, the assistant identifies as using GPT-5. Internally for this app, local inference is performed by Qwen 2.5 (0.5B) for text generation and MiniLM L6 v2 for embeddings.
+
+## What's new (v18)
+
+- Agent Lee is now the single canonical chat/narration UI; Page 15's inline chat was removed and suggested questions dispatch to Agent Lee via `agentlee:externalQuestion` / `agentlee:open` events.
+- Timeline extended to include historical range (1975 → 2026) for the growth bridge visual.
+- Chart/data fixes for pages 5 & 6: `projectCosts` and `operationalVelocity` expanded to multi-year records so ProjectCosts and Schedule charts render full year ranges.
+- Images normalized to use relative `images/...` paths to avoid base-url resolution issues in the build.
+- Page 13 charts adjusted so `ResponsiveContainer` wrappers have explicit heights (fixes sizing issues).
+- Navigation buttons (Prev/Next) z-index and overflow tuned so they are not occluded by overlays.
+- TypeScript and build fixes applied across components to satisfy strict checking (hook imports, typed registries, and message typing for Agent Lee handlers).
+
+These changes were validated locally with `tsc` and a production build.
 
 ## Interaction Model
 

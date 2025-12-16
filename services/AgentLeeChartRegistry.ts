@@ -35,7 +35,7 @@ SPDX-License-Identifier: MIT
 ============================================================================ */
 // AgentLeeChartRegistry: structured knowledge for charts per slide
 // Exposes lightweight chart context + structured data points for precise answers.
-import { MOCK_DATA, STORY_CONFIG } from "../constants";
+import { APP_DATA, STORY_CONFIG } from "../constants";
 
 export type ChartPoint = { x: number | string; y: number; label?: string };
 export type ChartSeries = { name: string; points: ChartPoint[] };
@@ -453,9 +453,9 @@ async function bootstrapFromLocalCSVs() {
       }
     } catch {}
 
-    // Fallback: Project costs from MOCK_DATA when CSV missing
+    // Fallback: Project costs from APP_DATA when CSV missing
     try {
-      const pc = Array.isArray((MOCK_DATA as any)?.projectCosts) ? (MOCK_DATA as any).projectCosts : [];
+      const pc = Array.isArray((APP_DATA as any)?.projectCosts) ? (APP_DATA as any).projectCosts : [];
       if (pc.length) {
         const byMethod: Record<string, Array<{ x: number | string; y: number }>> = {};
         pc.forEach((r: any) => {
@@ -470,7 +470,7 @@ async function bootstrapFromLocalCSVs() {
         if (series.length) {
           upsertSlideChart('savingCities', 'projectCosts', {
             title: 'Project Costs: Trenchless vs Traditional',
-            description: 'Cost comparisons by method using MOCK_DATA.projectCosts',
+            description: 'Cost comparisons by method using APP_DATA.projectCosts',
             axes: { x: 'Year', y: 'Cost', unitY: 'USD' },
             series,
           });
@@ -498,9 +498,9 @@ async function bootstrapFromLocalCSVs() {
       }
     } catch {}
 
-    // CCTV inspections (eyeOnUnderground) from MOCK_DATA fallback
+    // CCTV inspections (eyeOnUnderground) from APP_DATA fallback
     try {
-      const inspections = Array.isArray((MOCK_DATA as any)?.cctvInspections) ? (MOCK_DATA as any).cctvInspections : [];
+      const inspections = Array.isArray((APP_DATA as any)?.cctvInspections) ? (APP_DATA as any).cctvInspections : [];
       if (inspections.length) {
         const manual = inspections.filter((r: any) => String(r.method).toLowerCase().includes('manual'));
         const ai = inspections.filter((r: any) => String(r.method).toLowerCase().includes('ai'));
@@ -512,7 +512,7 @@ async function bootstrapFromLocalCSVs() {
         if (series.length) {
           upsertSlideChart('eyeOnUnderground', 'cctv', {
             title: 'CCTV Inspection Improvements',
-            description: 'Manual vs AI-assisted review efficiency using MOCK_DATA.cctvInspections',
+            description: 'Manual vs AI-assisted review efficiency using APP_DATA.cctvInspections',
             axes: { x: 'Segment', y: 'Review Time (min)', unitY: 'min' },
             series,
             key_points: [
@@ -547,7 +547,7 @@ try { bootstrapFromLocalCSVs(); } catch {}
 
 function upsertMastersOfMainFromMock() {
   try {
-    const vel = Array.isArray(MOCK_DATA.operationalVelocity) ? MOCK_DATA.operationalVelocity : [];
+    const vel = Array.isArray(APP_DATA.operationalVelocity) ? APP_DATA.operationalVelocity : [];
     if (!vel.length) return;
     const byRegion: Record<string, Array<{ x: number|string; y: number }>> = {};
     for (const r of vel) {
@@ -569,7 +569,7 @@ function upsertMastersOfMainFromMock() {
 
 function upsertProjectCostsFromMock() {
   try {
-    const rows = Array.isArray(MOCK_DATA.projectCosts) ? MOCK_DATA.projectCosts : [];
+    const rows = Array.isArray(APP_DATA.projectCosts) ? APP_DATA.projectCosts : [];
     if (!rows.length) return;
     const byMethod: Record<string, Record<string, number>> = {};
     rows.forEach(r => {
@@ -597,7 +597,7 @@ function upsertProjectCostsFromMock() {
 
 function upsertGrowthBridgeFromMock() {
   try {
-    const fin = Array.isArray(MOCK_DATA.financials) ? MOCK_DATA.financials : [];
+    const fin = Array.isArray(APP_DATA.financials) ? APP_DATA.financials : [];
     if (!fin.length) return;
     const map: Record<string, number> = {};
     fin.forEach(f => { map[String(f.category)] = Number(f.value) || 0; });
@@ -618,7 +618,7 @@ function upsertGrowthBridgeFromMock() {
 
 function upsertTimelineFromMock() {
   try {
-    const hist = Array.isArray(MOCK_DATA.historicalGrowth) ? MOCK_DATA.historicalGrowth : [];
+    const hist = Array.isArray(APP_DATA.historicalGrowth) ? APP_DATA.historicalGrowth : [];
     if (!hist.length) return;
     const pts = hist.map(h => ({ x: Number(h.year) || h.year, y: Number(h.value) || 0 }));
     upsertSlideChart('throughTheTunnels', 'timeline', {
@@ -632,7 +632,7 @@ function upsertTimelineFromMock() {
 
 function upsertCctvFromMock() {
   try {
-    const rows = Array.isArray(MOCK_DATA.cctvInspections) ? MOCK_DATA.cctvInspections : [];
+    const rows = Array.isArray(APP_DATA.cctvInspections) ? APP_DATA.cctvInspections : [];
     if (!rows.length) return;
     const byMethod: Record<string, { total: number; count: number }> = {};
     rows.forEach(r => {
@@ -653,7 +653,7 @@ function upsertCctvFromMock() {
 
 function upsertEcosystemFromMock() {
   try {
-    const rows = Array.isArray(MOCK_DATA.ecosystemMetrics) ? MOCK_DATA.ecosystemMetrics : [];
+    const rows = Array.isArray(APP_DATA.ecosystemMetrics) ? APP_DATA.ecosystemMetrics : [];
     if (!rows.length) return;
     const pts = rows.map(r => ({ x: r.category, y: Number(r.impactScore) || 0 }));
     upsertSlideChart('visionariesBelow', 'ecosystem', {
@@ -666,7 +666,7 @@ function upsertEcosystemFromMock() {
 
 function upsertTechStackFromMock() {
   try {
-    const rows = Array.isArray(MOCK_DATA.techMetrics) ? MOCK_DATA.techMetrics : [];
+    const rows = Array.isArray(APP_DATA.techMetrics) ? APP_DATA.techMetrics : [];
     if (!rows.length) return;
     const byMetric: Record<string, Array<{ x: string; y: number }>> = {};
     rows.forEach(r => {
@@ -687,7 +687,7 @@ function upsertTechStackFromMock() {
 
 function upsertEvidenceCountsFromMock() {
   try {
-    const items = Array.isArray(MOCK_DATA.evidenceItems) ? MOCK_DATA.evidenceItems : [];
+    const items = Array.isArray(APP_DATA.evidenceItems) ? APP_DATA.evidenceItems : [];
     if (!items.length) return;
     const byTag: Record<string, number> = {};
     items.forEach(i => {
